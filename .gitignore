@@ -1,0 +1,11 @@
+# R temporary / workspace
+.Rhistory
+.RData
+.Rproj.user/
+
+# Model outputs
+rgcam/*.proj
+
+# Optional: OS / IDE files
+*.DS_Store
+*.Rproj
