@@ -127,3 +127,44 @@ p
 # Save plot:
 ggsave("figures/lng_exports_by_state.png", plot = p,
        width = 5, height = 3.5, units = "in", dpi = 300)
+
+# Electricity demand by state - reference scenario only
+EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
+
+ref_elec_EER <- filter(EER_load_by_scenario, scenario == "reference") %>%
+  mutate(elec_EER = load_MWh / 1e6 / CONV_elec_EJ_TWh) %>%
+  select(region = state, year, elec_EER)
+
+ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
+  filter(grepl("elect_td", sector),
+         year %in% ANALYSIS_YEARS,
+         scenario == "GCAM-USA_Reference") %>%
+  group_by(region, year) %>%
+  summarise(elec_GCAM = sum(value)) %>%
+  ungroup()
+
+ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "year")) %>%
+  group_by(region) %>%
+  mutate(EER_growth = elec_EER - elec_EER[year == 2021],
+         GCAM_growth = elec_GCAM - elec_GCAM[year == 2021],
+         target = EER_growth - GCAM_growth)
+
+# check gas prices against aeo
+AEO_tab13 <- read_csv("data/AEO_Table13.csv") %>%
+  gather_years()
+AEO_henryhub <- filter(AEO_tab13, `full name` == "Natural Gas: Henry Hub Spot Price: Reference case") %>%
+  select(year, AEOprice = value)
+
+gasprices <- getQuery(gcam_output.proj, "prices by sector") %>%
+  filter(region == "USA",
+         sector %in% c("regional natural gas", "wholesale gas", "delivered gas"),
+         year %in% ANALYSIS_YEARS) %>%
+  mutate(price_USDperMMBTU = value / CONV_NG_EJ_QBTU * gdp_deflator_1975_2021) %>%
+  select(scenario, sector, year, price_USDperMMBTU)
+
+gasprice_comparison <- filter(gasprices, sector == "regional natural gas") %>%
+  left_join(AEO_henryhub, by = "year")
+
+
+
+
