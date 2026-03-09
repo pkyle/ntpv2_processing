@@ -8,6 +8,7 @@ rgcam/*.proj
 
 #Script outputs
 figures/*.png
+outputs/*.csv
 
 # Optional: OS / IDE files
 *.DS_Store
