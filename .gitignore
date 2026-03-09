@@ -6,6 +6,9 @@
 # Model outputs
 rgcam/*.proj
 
+#Script outputs
+figures/*.png
+
 # Optional: OS / IDE files
 *.DS_Store
 *.Rproj
