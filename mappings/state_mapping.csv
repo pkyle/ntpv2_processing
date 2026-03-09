@@ -1,0 +1,52 @@
+state.code,state.name,grid.region,Census.division,padd
+AK,Alaska,Alaska grid,Pacific,PADD5_WC
+AL,Alabama,Southeast grid,Central-SE,PADD3_GC
+AR,Arkansas,Southeast grid,Central-SW,PADD3_GC
+AZ,Arizona,Southwest grid,Mountain,PADD5_WC
+CA,California,California grid,Pacific,PADD5_WC
+CO,Colorado,Southwest grid,Mountain,PADD4_RM
+CT,Connecticut,New England grid,New England,PADD1A_NE
+DC,District of Columbia,Mid-Atlantic grid,Atlantic-S,PADD1B_CA
+DE,Delaware,Mid-Atlantic grid,Atlantic-S,PADD1B_CA
+FL,Florida,Florida grid,Atlantic-S,PADD1C_LA
+GA,Georgia,Southeast grid,Atlantic-S,PADD1C_LA
+HI,Hawaii,Hawaii grid,Pacific,PADD5_WC
+IA,Iowa,Central Northwest grid,Central-NW,PADD2_MW
+ID,Idaho,Northwest grid,Mountain,PADD4_RM
+IL,Illinois,Central Northeast grid,Central-NE,PADD2_MW
+IN,Indiana,Central East grid,Central-NE,PADD2_MW
+KS,Kansas,Central Southwest grid,Central-NW,PADD2_MW
+KY,Kentucky,Central East grid,Central-SE,PADD2_MW
+LA,Louisiana,Southeast grid,Central-SW,PADD3_GC
+MA,Massachusetts,New England grid,New England,PADD1A_NE
+MD,Maryland,Mid-Atlantic grid,Atlantic-S,PADD1B_CA
+ME,Maine,New England grid,New England,PADD1A_NE
+MI,Michigan,Central East grid,Central-NE,PADD2_MW
+MN,Minnesota,Central Northwest grid,Central-NW,PADD2_MW
+MO,Missouri,Central Northeast grid,Central-NW,PADD2_MW
+MS,Mississippi,Southeast grid,Central-SE,PADD3_GC
+MT,Montana,Northwest grid,Mountain,PADD4_RM
+NC,North Carolina,Southeast grid,Atlantic-S,PADD1C_LA
+ND,North Dakota,Central Northwest grid,Central-NW,PADD2_MW
+NE,Nebraska,Central Northwest grid,Central-NW,PADD2_MW
+NH,New Hampshire,New England grid,New England,PADD1A_NE
+NJ,New Jersey,Mid-Atlantic grid,Atlantic-N,PADD1B_CA
+NM,New Mexico,Southwest grid,Mountain,PADD3_GC
+NV,Nevada,Northwest grid,Mountain,PADD5_WC
+NY,New York,New York grid,Atlantic-N,PADD1B_CA
+OH,Ohio,Central East grid,Central-NE,PADD2_MW
+OK,Oklahoma,Central Southwest grid,Central-SW,PADD2_MW
+OR,Oregon,Northwest grid,Pacific,PADD5_WC
+PA,Pennsylvania,Mid-Atlantic grid,Atlantic-N,PADD1B_CA
+RI,Rhode Island,New England grid,New England,PADD1A_NE
+SC,South Carolina,Southeast grid,Atlantic-S,PADD1C_LA
+SD,South Dakota,Central Northwest grid,Central-NW,PADD2_MW
+TN,Tennessee,Southeast grid,Central-SE,PADD2_MW
+TX,Texas,Texas grid,Central-SW,PADD3_GC
+UT,Utah,Northwest grid,Mountain,PADD4_RM
+VA,Virginia,Southeast grid,Atlantic-S,PADD1C_LA
+VT,Vermont,New England grid,New England,PADD1A_NE
+WA,Washington,Northwest grid,Pacific,PADD5_WC
+WI,Wisconsin,Central Northeast grid,Central-NE,PADD2_MW
+WV,West Virginia,Central East grid,Atlantic-S,PADD1C_LA
+WY,Wyoming,Southwest grid,Mountain,PADD4_RM

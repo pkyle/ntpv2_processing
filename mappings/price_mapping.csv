@@ -1,0 +1,6 @@
+sector,rate_class
+delivered gas,Residential and Commercial
+wholesale gas,Power and Industry
+regional natural gas,Henry Hub
+elect_td_bld,Residential and Commercial
+elect_td_ind,Industry
