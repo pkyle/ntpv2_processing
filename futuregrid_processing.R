@@ -102,7 +102,7 @@ ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "
          target_increase = EER_growth - GCAM_growth)
 
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
-  mutate(highlight = if_else(abs(target_increase) < 0.1, FALSE, TRUE))
+  mutate(highlight = if_else(abs(target_increase) < 0.09, FALSE, TRUE))
   
 ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * CONV_elec_EJ_TWh, y = elec_GCAM * CONV_elec_EJ_TWh, color = highlight)) +
   geom_point() +
@@ -110,7 +110,7 @@ ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * CONV_elec_EJ_TWh, y = el
   geom_abline(slope = 1, intercept = 0) +
   xlab("EER TWh") +
   ylab("GCAM TWh") +
-  geom_text(data = filter(ref_elec_comparison_for_plot, abs(target_increase) > 0.1),
+  geom_text(data = filter(ref_elec_comparison_for_plot, abs(target_increase) > 0.09),
             aes(label = region),
             vjust = -0.5) +
   scale_color_manual(values = c("black", "red")) +
