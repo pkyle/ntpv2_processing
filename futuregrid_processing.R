@@ -3,7 +3,6 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # working_dir <- getwd()
 
-
 # devtools::install_github("JGCRI/rgcam)
 library(rgcam)
 library(dplyr)
@@ -16,8 +15,19 @@ library(gcamdata)
 library(stringr)
 #library(tidyverse)
 
+# Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
+# The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
+GCAM_COMMIT_HASH <- "afe357"
+THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
+
+# Make a function to write out data files, appending commit hashes to the filename
+write_stamp_csv <- function(data_table, base_filename){
+  full_filename <- paste0("outputs/", base_filename, "_", GCAM_COMMIT_HASH, "_", THIS_COMMIT_HASH, ".csv")
+  write_csv(data_table, full_filename)
+}
+
+
 # read mapping files ----
-gas_consumption_mapping <- read_csv("./mappings/gas_consumption_mapping.csv")
 price_mapping <- read_csv("./mappings/price_mapping.csv")
 state_mapping <- read_csv("./mappings/state_mapping.csv")
 
@@ -71,14 +81,14 @@ elec_consumption_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
   summarise(consumption_TWh = round(sum(value) * CONV_elec_EJ_TWh, digits = REPORTING_DIGITS_TWH)) %>%
   ungroup()
 
-write_csv(elec_consumption_state, "outputs/elec_consumption_state.csv")
+write_stamp_csv(elec_consumption_state, "elec_consumption_state")
 
 elec_consumption_nation <- elec_consumption_state %>%
   group_by(scenario, year) %>%
   summarise(consumption_TWh = sum(consumption_TWh)) %>%
   ungroup()
 
-write_csv(elec_consumption_nation, "outputs/elec_consumption_nation.csv")
+write_stamp_csv(elec_consumption_nation, "elec_consumption_nation")
 
 # Electricity consumption comparison with EER Reference scenario
 EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
@@ -128,14 +138,14 @@ elec_gen_tech_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
   summarise(generation_TWh = round(sum(value) * CONV_elec_EJ_TWh, digits = REPORTING_DIGITS_TWH)) %>%
   ungroup()
 
-write_csv(elec_gen_tech_state, "outputs/elec_gen_tech_state.csv")
+write_stamp_csv(elec_gen_tech_state, "elec_gen_tech_state")
 
 elec_gen_tech_nation <- elec_gen_tech_state %>%
   group_by(scenario, technology, year) %>%
   summarise(generation_TWh = sum(generation_TWh)) %>%
   ungroup()
 
-write_csv(elec_gen_tech_nation, "outputs/elec_gen_tech_nation.csv")
+write_stamp_csv(elec_gen_tech_nation, "elec_gen_tech_nation")
 
 # Gas prices
 gas_prices <- getQuery(gcam_output.proj, "prices by sector") %>%
@@ -152,8 +162,8 @@ gas_prices_state <- inner_join(gas_prices, state_mapping, by = c(region = "grid.
   select(scenario, region, rate_class, year, price_USDperMMBTU)
 gas_prices_nation <- filter(gas_prices, region == "USA", rate_class == "Henry Hub")
 
-write_csv(gas_prices_state, "outputs/gas_prices_state.csv")
-write_csv(gas_prices_nation, "outputs/gas_prices_nation.csv")
+write_stamp_csv(gas_prices_state, "gas_prices_state")
+write_stamp_csv(gas_prices_nation, "gas_prices_nation")
 
 # Compare Henry Hub prices
 AEO_tab13 <- read_csv("data/AEO_Table13.csv") %>%
@@ -181,8 +191,7 @@ gas_consumption_nonelec <- getQuery(gcam_output.proj, "inputs by tech") %>%
          sector != "delivered gas",
          input %in% c("delivered gas", "wholesale gas"),
          year %in% ANALYSIS_YEARS) %>%
-  left_join(gas_consumption_mapping, by = c("sector", "subsector", "technology")) %>%
-  group_by(scenario, region, category, year) %>%
+  group_by(scenario, region, sector, year) %>%
   summarise(consumption_Tbtu = round(sum(value) * CONV_NG_EJ_TBTU, digits = REPORTING_DIGITS_TBTU)) %>%
   ungroup()
   
@@ -191,14 +200,13 @@ gas_consumption_elec <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
          !region %in% EXCLUDED_STATES,
          input == "wholesale gas",
          year %in% ANALYSIS_YEARS) %>%
-  mutate(category = "Electricity Generation") %>%
-  group_by(scenario, region, category, year) %>%
+  group_by(scenario, region, sector, year) %>%
   summarise(consumption_Tbtu = round(sum(value) * CONV_NG_EJ_TBTU, digits = REPORTING_DIGITS_TBTU)) %>%
   ungroup()
 
-gas_consumption_state_category <- bind_rows(gas_consumption_elec, gas_consumption_nonelec)
+gas_consumption_sector_state <- bind_rows(gas_consumption_elec, gas_consumption_nonelec)
 
-write_csv(gas_consumption_state_category, "outputs/gas_consumption_state_category.csv")
+write_stamp_csv(gas_consumption_sector_state, "gas_consumption_sector_state")
 
 # Gas production by state
 gas_production_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
@@ -209,7 +217,7 @@ gas_production_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
   summarise(production_Tbtu = round(sum(value) * CONV_NG_EJ_TBTU, digits = REPORTING_DIGITS_TBTU)) %>%
   ungroup()
 
-write_csv(gas_production_state, "outputs/gas_production_state.csv")
+write_stamp_csv(gas_production_state, "gas_production_state")
 
 # Gas trade
 # Imports from Canada: equal to exports from Canada to N Amer pipeline market
@@ -249,7 +257,7 @@ Exports_LNG <- getQuery(gcam_output.proj, "outputs by tech") %>%
 
 gas_trade_nation <- bind_rows(Imports_Pipeline, Exports_Pipeline, Imports_LNG, Exports_LNG)
 
-write_csv(gas_trade_nation, "outputs/gas_trade_nation.csv")
+write_stamp_csv(gas_trade_nation, "gas_trade_nation")
 
 # LNG exports by state
 # read in the data
