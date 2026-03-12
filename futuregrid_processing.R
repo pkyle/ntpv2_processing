@@ -1,9 +1,8 @@
-# Clear workspace and set work directory
-# rm(list = ls())
+# Set working directory to this file's location
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# working_dir <- getwd()
 
-# devtools::install_github("JGCRI/rgcam)
+# if the rgcam package is not installed locally, use:
+#  devtools::install_github("JGCRI/rgcam)
 library(rgcam)
 library(dplyr)
 library(tidyr)
@@ -13,7 +12,6 @@ library(patchwork)
 library(RColorBrewer)
 library(gcamdata)
 library(stringr)
-#library(tidyverse)
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
@@ -26,8 +24,8 @@ write_stamp_csv <- function(data_table, base_filename){
   write_csv(data_table, full_filename)
 }
 
-
 # read mapping files ----
+elec_tech_mapping <- read_csv("./mappings/elec_tech_mapping.csv")
 price_mapping <- read_csv("./mappings/price_mapping.csv")
 state_mapping <- read_csv("./mappings/state_mapping.csv")
 
@@ -35,14 +33,20 @@ state_mapping <- read_csv("./mappings/state_mapping.csv")
 ANALYSIS_YEARS <- 2021:2050
 CONV_NG_EJ_QBTU <- 1/(1.0551 * .905)    # conversion from EJ LHV of natural gas to quadrillion btu HHV
 CONV_NG_EJ_TBTU <- CONV_NG_EJ_QBTU * 1000    # conversion from EJ LHV of natural gas to trillion btu HHV
-CONV_elec_EJ_TWh <- 1/.0036             # conversion from EJ of electricity to TWh
+TWH_PER_EJ <- 1/.0036
+EJ_PER_TWH <- 0.0036
+GW_PER_TW <- 1000
+HOURS_PER_YEAR <- 8766
 gdp_deflator_1975_2021 <- 3.964         # conversion from 1975$ in GCAM output to 2021$ for reporting
 EJ_Tcf <- .981
 EJ_Mmcf <- 981000                       # conversion from million cubic feet of natural gas to EJ (LHV)
 EXCLUDED_STATES <- c("AK", "HI")        # Only CONUS states are tracked at this point
-REPORTING_DIGITS_TWH <- 3               # number of decimal places to report quantities in TWh
-REPORTING_DIGITS_TBTU <- 1               # number of decimal places to report quantities in Tbtu
-REPORTING_DIGITS_QBTU <- 4               # number of decimal places to report quantities in Qbtu
+REPORTING_DIGITS_TWH <- 3               # number of decimals for energy in TWh
+REPORTING_DIGITS_TBTU <- 1               # number of decimals for energy in Tbtu
+REPORTING_DIGITS_GW <- 3               # number of decimals for capacity in gigawatts
+REPORTING_DIGITS_CF <- 3               # number of decimals for capacity factors
+REPORTING_DIGITS_IO <- 4               # number of decimals for input-output coefficients
+REPORTING_DIGITS_OMVAR <- 3               # number of decimal places for variable O&M costs
 
 # read rgcam proj file----
 gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
@@ -78,7 +82,7 @@ elec_consumption_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
          year %in% ANALYSIS_YEARS,
          !region %in% EXCLUDED_STATES) %>%
   group_by(scenario, region, year) %>%
-  summarise(consumption_TWh = round(sum(value) * CONV_elec_EJ_TWh, digits = REPORTING_DIGITS_TWH)) %>%
+  summarise(consumption_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
   ungroup()
 
 write_stamp_csv(elec_consumption_state, "elec_consumption_state")
@@ -94,7 +98,7 @@ write_stamp_csv(elec_consumption_nation, "elec_consumption_nation")
 EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
 
 ref_elec_EER <- filter(EER_load_by_scenario, scenario == "reference") %>%
-  mutate(elec_EER = load_MWh / 1e6 / CONV_elec_EJ_TWh) %>%
+  mutate(elec_EER = load_MWh / 1e6 / TWH_PER_EJ) %>%
   select(region = state, year, elec_EER)
 
 ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
@@ -114,7 +118,7 @@ ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
   mutate(highlight = if_else(abs(target_increase) < 0.09, FALSE, TRUE))
   
-ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * CONV_elec_EJ_TWh, y = elec_GCAM * CONV_elec_EJ_TWh, color = highlight)) +
+ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * TWH_PER_EJ, y = elec_GCAM * TWH_PER_EJ, color = highlight)) +
   geom_point() +
   facet_wrap(~year) +
   geom_abline(slope = 1, intercept = 0) +
@@ -129,23 +133,81 @@ ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * CONV_elec_EJ_TWh, y = el
 ggsave("figures/EER_GCAM_ref_comparison.png", width = 5, height = 5, units = "in")
 
 # Electricity generation
-elec_gen_tech_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
+elec_gen_fuel_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
   filter(grepl("generation", sector) | technology == "rooftop_pv",
          year %in% ANALYSIS_YEARS,
          !region %in% EXCLUDED_STATES) %>%
   mutate(technology = str_to_title(subsector...5)) %>%
   group_by(scenario, region, technology, year) %>%
-  summarise(generation_TWh = round(sum(value) * CONV_elec_EJ_TWh, digits = REPORTING_DIGITS_TWH)) %>%
+  summarise(generation_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
   ungroup()
 
-write_stamp_csv(elec_gen_tech_state, "elec_gen_tech_state")
+write_stamp_csv(elec_gen_fuel_state, "elec_gen_fuel_state")
 
-elec_gen_tech_nation <- elec_gen_tech_state %>%
+elec_gen_fuel_nation <- elec_gen_fuel_state %>%
   group_by(scenario, technology, year) %>%
   summarise(generation_TWh = sum(generation_TWh)) %>%
   ungroup()
 
-write_stamp_csv(elec_gen_tech_nation, "elec_gen_tech_nation")
+write_stamp_csv(elec_gen_fuel_nation, "elec_gen_fuel_nation")
+
+# Granular data for Task 4: output, capacity, IOcoefficients, and OM-var by state, technology, and vintage
+# First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
+elec_gen_state_tech_vintage <- getQuery(gcam_output.proj, "elec gen by tech and vintage") %>%
+  separate(technology, into = c("technology", "vintage"), sep = ",year=") %>%
+  mutate(vintage = as.numeric(vintage)) %>%
+  rename(gen_EJ = value) %>%
+  select(-Units) %>%
+  filter(!region %in% EXCLUDED_STATES,
+         year %in% ANALYSIS_YEARS)
+
+# Capacity factors, IOcoefficients, and OMvar assumptions are assigned to each cohort (vintage) and remain constant for the lifetime
+# For joining with generation by tech and vintage, the reported "year" should be renamed to "vintage"
+elec_capfac_state_tech <- getQuery(gcam_output.proj, "elec capacity factors") %>%
+  rename(vintage = year,
+         CF = value) %>%
+  select(-Units)
+
+elec_IOcoef_state_tech <- getQuery(gcam_output.proj, "electricity IOcoefs by tech") %>%
+  rename(vintage = year,
+         IOcoef = value,
+         energy_input = input) %>%
+  filter(!grepl("water|credits", energy_input)) %>%
+  select(-Units)
+
+elec_OMvar_state_tech <- getQuery(gcam_output.proj, "electricity OMvar costs") %>%
+  rename(vintage = year) %>%
+  mutate(OMvar_USDperMWh = value * gdp_deflator_1975_2021) %>%
+  select(-Units, -input, -value)
+
+# join in capacity factors, IOcoefficients, OMvar
+# Manually fill in capacity factors for hydro and geothermal (not sure why geothermal doesn't appear in the capacity factor query)
+elec_allvars_state_tech_vintage <- elec_gen_state_tech_vintage %>%
+  left_join(elec_capfac_state_tech, by = c("scenario", "region", "sector", "subsector...5", "subsector...6", "technology", "vintage")) %>%
+  left_join(elec_IOcoef_state_tech, by = c("scenario", "region", "sector", "subsector...5", "subsector...6", "technology", "vintage")) %>%
+  left_join(elec_OMvar_state_tech, by = c("scenario", "region", "sector", "subsector...5", "subsector...6", "technology", "vintage")) %>%
+  replace_na(list(IOcoef = 1, OMvar_USDperMWh = 0)) %>%
+  mutate(CF = if_else(subsector...5 == "hydro", 0.44, CF),
+         CF = if_else(subsector...5 == "geothermal", 0.9, CF),
+         energy_input = if_else(is.na(energy_input), subsector...5, energy_input),
+         capacity_GW = gen_EJ * GW_PER_TW / (HOURS_PER_YEAR * EJ_PER_TWH * CF),
+         energy_input_EJ = gen_EJ * IOcoef,
+         OMvar_weighted = gen_EJ * OMvar_USDperMWh) %>%   # not bothering to convert to meaningful units (e.g. billion $) as it's just a weight
+  left_join(elec_tech_mapping, by = "technology") %>%
+  group_by(scenario, region, reporting_technology, energy_input, vintage, year) %>%
+  summarise(gen_EJ = sum(gen_EJ),
+            capacity_GW = sum(capacity_GW),
+            energy_input_EJ = sum(energy_input_EJ),
+            OMvar_weighted = sum(OMvar_weighted)) %>%
+  ungroup() %>%
+  mutate(CF = round(gen_EJ * GW_PER_TW / (HOURS_PER_YEAR * EJ_PER_TWH * capacity_GW), digits = REPORTING_DIGITS_CF),
+         capacity_GW = round(capacity_GW, REPORTING_DIGITS_GW),
+         gen_TWh = round(gen_EJ * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH),
+         IOcoef = round(energy_input_EJ / gen_EJ, digits = REPORTING_DIGITS_IO),
+         OMvar_USDperMWh = round(OMvar_weighted / gen_EJ, digits = REPORTING_DIGITS_OMVAR)) %>%
+  select(scenario, region, technology = reporting_technology, energy_input, vintage, year, gen_TWh, capacity_GW, CF, IOcoef, OMvar_USDperMWh)
+
+write_stamp_csv(elec_allvars_state_tech_vintage, "elec_allvars_state_tech_vintage")
 
 # Gas prices
 gas_prices <- getQuery(gcam_output.proj, "prices by sector") %>%

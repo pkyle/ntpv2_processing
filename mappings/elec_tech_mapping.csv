@@ -1,0 +1,62 @@
+technology,reporting_technology
+biomass (conv) (cooling pond),biomass (cooling pond)
+biomass (conv) (dry cooling),biomass (dry cooling)
+biomass (conv) (once through),biomass (once through)
+biomass (conv) (recirculating),biomass (recirculating)
+biomass (conv) (seawater),biomass (seawater)
+biomass (IGCC) (dry cooling),biomass (dry cooling)
+biomass (IGCC) (recirculating),biomass (recirculating)
+biomass (IGCC) (seawater),biomass (seawater)
+coal (conv pul) (cooling pond),coal (cooling pond)
+coal (conv pul) (dry cooling),coal (dry cooling)
+coal (conv pul) (once through),coal (once through)
+coal (conv pul) (recirculating),coal (recirculating)
+coal (conv pul) (seawater),coal (seawater)
+CSP_base_storage,CSP (dry_hybrid)
+CSP_int (dry_hybrid),CSP (dry_hybrid)
+CSP_int (recirculating),CSP (recirculating)
+CSP_peak (dry_hybrid),CSP (dry_hybrid)
+CSP_peak (recirculating),CSP (recirculating)
+CSP_subpeak (dry_hybrid),CSP (dry_hybrid)
+CSP_subpeak (recirculating),CSP (recirculating)
+gas (CC) (cooling pond),gas (CC) (cooling pond)
+gas (CC) (dry cooling),gas (CC) (dry cooling)
+gas (CC) (once through),gas (CC) (once through)
+gas (CC) (recirculating),gas (CC) (recirculating)
+gas (CC) (seawater),gas (CC) (seawater)
+gas (steam/CT) (cooling pond),gas (steam/CT) (cooling pond)
+gas (steam/CT) (dry cooling),gas (steam/CT) (dry cooling)
+gas (steam/CT) (once through),gas (steam/CT) (once through)
+gas (steam/CT) (recirculating),gas (steam/CT) (recirculating)
+gas (steam/CT) (seawater),gas (steam/CT) (seawater)
+Gen_II_LWR (cooling pond),nuclear (cooling pond)
+Gen_II_LWR (once through),nuclear (once through)
+Gen_II_LWR (recirculating),nuclear (recirculating)
+Gen_II_LWR (seawater),nuclear (seawater)
+geothermal (recirculating),geothermal (recirculating)
+hydro_base,hydro
+hydro_int,hydro
+large reactor (cooling pond),nuclear (cooling pond)
+large reactor (recirculating),nuclear (recirculating)
+large reactor (seawater),nuclear (seawater)
+PV_base_storage,PV
+PV_int,PV
+PV_peak,PV
+PV_subpeak,PV
+refined liquids (CC) (dry cooling),refined liquids (dry cooling)
+refined liquids (CC) (recirculating),refined liquids (recirculating)
+refined liquids (CC) (seawater),refined liquids (seawater)
+refined liquids (steam/CT) (cooling pond),refined liquids (cooling pond)
+refined liquids (steam/CT) (dry cooling),refined liquids (dry cooling)
+refined liquids (steam/CT) (once through),refined liquids (once through)
+refined liquids (steam/CT) (recirculating),refined liquids (recirculating)
+refined liquids (steam/CT) (seawater),refined liquids (seawater)
+rooftop_pv,rooftop_pv
+SMR (cooling pond),nuclear (cooling pond)
+SMR (recirculating),nuclear (recirculating)
+SMR (seawater),nuclear (seawater)
+wind_base,wind
+wind_base_offshore,wind_offshore
+wind_base_storage,wind
+wind_int,wind
+wind_subpeak,wind
