@@ -25,6 +25,7 @@ write_stamp_csv <- function(data_table, base_filename){
 }
 
 # read mapping files ----
+fuel_LHV_HHV <- read_csv("./data/fuel_LHV_HHV.csv")
 elec_tech_mapping <- read_csv("./mappings/elec_tech_mapping.csv")
 price_mapping <- read_csv("./mappings/price_mapping.csv")
 state_mapping <- read_csv("./mappings/state_mapping.csv")
@@ -33,6 +34,9 @@ state_mapping <- read_csv("./mappings/state_mapping.csv")
 ANALYSIS_YEARS <- 2021:2050
 CONV_NG_EJ_QBTU <- 1/(1.0551 * .905)    # conversion from EJ LHV of natural gas to quadrillion btu HHV
 CONV_NG_EJ_TBTU <- CONV_NG_EJ_QBTU * 1000    # conversion from EJ LHV of natural gas to trillion btu HHV
+CONV_GJ_MMBTU <- 1/1.0551
+CONV_IO_HEATRATE <- 3.412                    # conversion from input-output coefficient to heat rate (btu per mwh)
+CONV_MWH_GJ <- 3.6                    # conversion from megawatt-hours to gigajoules
 TWH_PER_EJ <- 1/.0036
 EJ_PER_TWH <- 0.0036
 GW_PER_TW <- 1000
@@ -41,11 +45,12 @@ gdp_deflator_1975_2021 <- 3.964         # conversion from 1975$ in GCAM output t
 EJ_Tcf <- .981
 EJ_Mmcf <- 981000                       # conversion from million cubic feet of natural gas to EJ (LHV)
 EXCLUDED_STATES <- c("AK", "HI")        # Only CONUS states are tracked at this point
+REPORTING_STATES <- state_mapping$state.code[!state_mapping$state.code %in% EXCLUDED_STATES]
 REPORTING_DIGITS_TWH <- 3               # number of decimals for energy in TWh
 REPORTING_DIGITS_TBTU <- 1               # number of decimals for energy in Tbtu
 REPORTING_DIGITS_GW <- 3               # number of decimals for capacity in gigawatts
 REPORTING_DIGITS_CF <- 3               # number of decimals for capacity factors
-REPORTING_DIGITS_IO <- 4               # number of decimals for input-output coefficients
+REPORTING_DIGITS_HEATRATE <- 4               # number of decimals for heat rates
 REPORTING_DIGITS_OMVAR <- 3               # number of decimal places for variable O&M costs
 
 # read rgcam proj file----
@@ -151,7 +156,7 @@ elec_gen_fuel_nation <- elec_gen_fuel_state %>%
 
 write_stamp_csv(elec_gen_fuel_nation, "elec_gen_fuel_nation")
 
-# Granular data for Task 4: output, capacity, IOcoefficients, and OM-var by state, technology, and vintage
+# Granular data for Task 4: output, capacity, capacity factors, fuel prices, and variable O&M costs by state, technology, and vintage
 # First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
 elec_gen_state_tech_vintage <- getQuery(gcam_output.proj, "elec gen by tech and vintage") %>%
   separate(technology, into = c("technology", "vintage"), sep = ",year=") %>%
@@ -180,7 +185,35 @@ elec_OMvar_state_tech <- getQuery(gcam_output.proj, "electricity OMvar costs") %
   mutate(OMvar_USDperMWh = value * gdp_deflator_1975_2021) %>%
   select(-Units, -input, -value)
 
-# join in capacity factors, IOcoefficients, OMvar
+# Fuel prices can be queried for selected fuels at the state level, grid region level, or USA level
+fuelprices <- getQuery(gcam_output.proj, "prices by sector") %>%
+  filter(sector %in% elec_IOcoef_state_tech$energy_input,
+         year %in% ANALYSIS_YEARS) %>%
+  mutate(fuelprice_USDperGJ = value * gdp_deflator_1975_2021) %>%
+  select(scenario, region, energy_input = sector, year, fuelprice_USDperGJ)
+
+fuelprices_fromstate <- filter(fuelprices, region %in% REPORTING_STATES)
+
+fuelprices_fromgridregion <- filter(fuelprices, grepl("grid", region),
+                                  !energy_input %in% fuelprices_fromstate$energy_input) %>%
+  left_join(select(state_mapping, state.code, grid.region), by = c("region" = "grid.region"), relationship = "many-to-many") %>%
+  mutate(region = state.code) %>%
+  select(-state.code) %>%
+  filter(!region %in% EXCLUDED_STATES)
+
+fuelprices_fromusa <- filter(fuelprices, region == "USA",
+                             !energy_input %in% c(fuelprices_fromstate$energy_input, fuelprices_fromgridregion$energy_input)) %>%
+  select(-region) %>%
+  repeat_add_columns(tibble(region = REPORTING_STATES))
+
+fuelprices <- bind_rows(fuelprices_fromstate, fuelprices_fromgridregion, fuelprices_fromusa) %>%
+  left_join(fuel_LHV_HHV, by = "energy_input") %>%
+  replace_na(list(LHV_HHV = 1)) %>%
+  mutate(fuelprice_USDperMMbtu = fuelprice_USDperGJ * LHV_HHV / CONV_GJ_MMBTU) %>%
+  select(scenario, region, energy_input, year, fuelprice_USDperMMbtu)
+  
+
+# join in capacity factors, IOcoefficients (and heat rates), fuel prices (and fuel costs), OMvar
 # Manually fill in capacity factors for hydro and geothermal (not sure why geothermal doesn't appear in the capacity factor query)
 elec_allvars_state_tech_vintage <- elec_gen_state_tech_vintage %>%
   left_join(elec_capfac_state_tech, by = c("scenario", "region", "sector", "subsector...5", "subsector...6", "technology", "vintage")) %>%
@@ -200,12 +233,16 @@ elec_allvars_state_tech_vintage <- elec_gen_state_tech_vintage %>%
             energy_input_EJ = sum(energy_input_EJ),
             OMvar_weighted = sum(OMvar_weighted)) %>%
   ungroup() %>%
+  left_join(fuelprices, by = c("scenario", "region", "energy_input", "year")) %>%
+  left_join(fuel_LHV_HHV, by = "energy_input") %>%
+  replace_na(list(fuelprice_USDperMMbtu = 0, LHV_HHV = 1)) %>%
   mutate(CF = round(gen_EJ * GW_PER_TW / (HOURS_PER_YEAR * EJ_PER_TWH * capacity_GW), digits = REPORTING_DIGITS_CF),
          capacity_GW = round(capacity_GW, REPORTING_DIGITS_GW),
          gen_TWh = round(gen_EJ * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH),
-         IOcoef = round(energy_input_EJ / gen_EJ, digits = REPORTING_DIGITS_IO),
+         IOcoef = energy_input_EJ / gen_EJ,
+         heatrate_BTUperMWh = round(IOcoef * CONV_IO_HEATRATE / LHV_HHV, digits = REPORTING_DIGITS_HEATRATE),
          OMvar_USDperMWh = round(OMvar_weighted / gen_EJ, digits = REPORTING_DIGITS_OMVAR)) %>%
-  select(scenario, region, technology = reporting_technology, energy_input, vintage, year, gen_TWh, capacity_GW, CF, IOcoef, OMvar_USDperMWh)
+  select(scenario, region, technology = reporting_technology, energy_input, vintage, year, gen_TWh, capacity_GW, CF, heatrate_BTUperMWh, fuelprice_USDperMMbtu, OMvar_USDperMWh)
 
 write_stamp_csv(elec_allvars_state_tech_vintage, "elec_allvars_state_tech_vintage")
 
