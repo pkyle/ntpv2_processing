@@ -303,7 +303,10 @@ gas_consumption_elec <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
   summarise(consumption_Tbtu = round(sum(value) * CONV_NG_EJ_TBTU, digits = REPORTING_DIGITS_TBTU)) %>%
   ungroup()
 
-gas_consumption_sector_state <- bind_rows(gas_consumption_elec, gas_consumption_nonelec)
+# This file is written out in wide format, with years as columns and the units defined in a specific column
+gas_consumption_sector_state <- bind_rows(gas_consumption_elec, gas_consumption_nonelec) %>%
+  mutate(unit = "trillion btu") %>%
+  spread(key = year, value = consumption_Tbtu, fill = 0)
 
 write_stamp_csv(gas_consumption_sector_state, "gas_consumption_sector_state")
 
