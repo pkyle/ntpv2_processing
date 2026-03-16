@@ -15,7 +15,7 @@ library(stringr)
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
-GCAM_COMMIT_HASH <- "afe357"
+GCAM_COMMIT_HASH <- "4479af"
 THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
 
 # Make a function to write out data files, appending commit hashes to the filename
@@ -120,6 +120,13 @@ ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "
          GCAM_growth = elec_GCAM - elec_GCAM[year == 2021],
          target_increase = EER_growth - GCAM_growth)
 
+ref_elec_comparison_nation <- ref_elec_comparison %>%
+  group_by(year) %>%
+  summarise(elec_EER = sum(elec_EER),
+            elec_GCAM = sum(elec_GCAM),
+            target_increase = sum(target_increase)) %>%
+  ungroup()
+  
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
   mutate(highlight = if_else(abs(target_increase) < 0.09, FALSE, TRUE))
   
@@ -245,6 +252,16 @@ elec_allvars_state_tech_vintage <- elec_gen_state_tech_vintage %>%
   select(scenario, region, technology = reporting_technology, energy_input, vintage, year, gen_TWh, capacity_GW, CF, heatrate_BTUperMWh, fuelprice_USDperMMbtu, OMvar_USDperMWh)
 
 write_stamp_csv(elec_allvars_state_tech_vintage, "elec_allvars_state_tech_vintage")
+
+# Write out the data center electricity consumption
+elec_consumption_datacenters_state <- getQuery(gcam_output.proj, "inputs by tech") %>%
+  filter(region %in% REPORTING_STATES,
+         sector == "data center",
+         year %in% ANALYSIS_YEARS) %>%
+  mutate(consumption_TWh = value * TWH_PER_EJ) %>%
+  select(scenario, region, sector, year, consumption_TWh)
+
+write_stamp_csv(elec_consumption_datacenters_state, "elec_consumption_datacenters_state")
 
 # Gas prices
 gas_prices <- getQuery(gcam_output.proj, "prices by sector") %>%
