@@ -1,0 +1,307 @@
+"category","year","state","load_MWh"
+"data center",2025,"alabama",2147264
+"data center",2025,"alaska",0
+"data center",2025,"arizona",15107469
+"data center",2025,"arkansas",0
+"data center",2025,"california",11818140
+"data center",2025,"colorado",3512200
+"data center",2025,"connecticut",321742
+"data center",2025,"delaware",35273
+"data center",2025,"district of columbia",75779
+"data center",2025,"florida",1639250
+"data center",2025,"georgia",13183364
+"data center",2025,"hawaii",46060
+"data center",2025,"idaho",237682
+"data center",2025,"illinois",12712391
+"data center",2025,"indiana",244677
+"data center",2025,"iowa",6402570
+"data center",2025,"kansas",512940
+"data center",2025,"kentucky",2171927
+"data center",2025,"louisiana",94416
+"data center",2025,"maine",53408
+"data center",2025,"maryland",761297
+"data center",2025,"massachusetts",1950013
+"data center",2025,"michigan",680836
+"data center",2025,"minnesota",900424
+"data center",2025,"mississippi",569390
+"data center",2025,"missouri",1355481
+"data center",2025,"montana",1099587
+"data center",2025,"nebraska",5590932
+"data center",2025,"nevada",6321256
+"data center",2025,"new hampshire",35278
+"data center",2025,"new jersey",5514123
+"data center",2025,"new mexico",2463716
+"data center",2025,"new york",6284781
+"data center",2025,"north carolina",7156846
+"data center",2025,"north dakota",6315104
+"data center",2025,"ohio",7641972
+"data center",2025,"oklahoma",1704648
+"data center",2025,"oregon",14708602
+"data center",2025,"pennsylvania",3236492
+"data center",2025,"rhode island",10343
+"data center",2025,"south carolina",2557158
+"data center",2025,"south dakota",116167
+"data center",2025,"tennessee",3835467
+"data center",2025,"texas",64202648
+"data center",2025,"utah",5535648
+"data center",2025,"vermont",0
+"data center",2025,"virginia",48770497
+"data center",2025,"washington",9931741
+"data center",2025,"west virginia",0
+"data center",2025,"wisconsin",190635
+"data center",2025,"wyoming",3202653
+"data center",2030,"alabama",3713783
+"data center",2030,"alaska",0
+"data center",2030,"arizona",26192908
+"data center",2030,"arkansas",0
+"data center",2030,"california",20527809
+"data center",2030,"colorado",6081951
+"data center",2030,"connecticut",556703
+"data center",2030,"delaware",55082
+"data center",2030,"district of columbia",130964
+"data center",2030,"florida",2838280
+"data center",2030,"georgia",22814618
+"data center",2030,"hawaii",87325
+"data center",2030,"idaho",411556
+"data center",2030,"illinois",21996691
+"data center",2030,"indiana",423189
+"data center",2030,"iowa",11072439
+"data center",2030,"kansas",888278
+"data center",2030,"kentucky",3757067
+"data center",2030,"louisiana",161660
+"data center",2030,"maine",96402
+"data center",2030,"maryland",1316402
+"data center",2030,"massachusetts",3375818
+"data center",2030,"michigan",1178592
+"data center",2030,"minnesota",1555807
+"data center",2030,"mississippi",984707
+"data center",2030,"missouri",2341826
+"data center",2030,"montana",1902143
+"data center",2030,"nebraska",9682049
+"data center",2030,"nevada",10962808
+"data center",2030,"new hampshire",54119
+"data center",2030,"new jersey",9550352
+"data center",2030,"new mexico",4272957
+"data center",2030,"new york",10880926
+"data center",2030,"north carolina",12373933
+"data center",2030,"north dakota",10921471
+"data center",2030,"ohio",13229105
+"data center",2030,"oklahoma",2950267
+"data center",2030,"oregon",25523113
+"data center",2030,"pennsylvania",5603677
+"data center",2030,"rhode island",21708
+"data center",2030,"south carolina",4424871
+"data center",2030,"south dakota",200653
+"data center",2030,"tennessee",6627534
+"data center",2030,"texas",111165941
+"data center",2030,"utah",9592457
+"data center",2030,"vermont",0
+"data center",2030,"virginia",84446900
+"data center",2030,"washington",17230209
+"data center",2030,"west virginia",0
+"data center",2030,"wisconsin",329462
+"data center",2030,"wyoming",5540920
+"data center",2035,"alabama",4749425
+"data center",2035,"alaska",0
+"data center",2035,"arizona",33525672
+"data center",2035,"arkansas",0
+"data center",2035,"california",26294813
+"data center",2035,"colorado",7777188
+"data center",2035,"connecticut",712006
+"data center",2035,"delaware",71209
+"data center",2035,"district of columbia",169220
+"data center",2035,"florida",3631922
+"data center",2035,"georgia",29183282
+"data center",2035,"hawaii",108155
+"data center",2035,"idaho",526373
+"data center",2035,"illinois",28118932
+"data center",2035,"indiana",541055
+"data center",2035,"iowa",14150014
+"data center",2035,"kansas",1135728
+"data center",2035,"kentucky",4804259
+"data center",2035,"louisiana",206061
+"data center",2035,"maine",120681
+"data center",2035,"maryland",1683211
+"data center",2035,"massachusetts",4317784
+"data center",2035,"michigan",1507018
+"data center",2035,"minnesota",1987766
+"data center",2035,"mississippi",1259339
+"data center",2035,"missouri",2992087
+"data center",2035,"montana",2432050
+"data center",2035,"nebraska",12377472
+"data center",2035,"nevada",14031161
+"data center",2035,"new hampshire",70792
+"data center",2035,"new jersey",12217687
+"data center",2035,"new mexico",5467767
+"data center",2035,"new york",13916608
+"data center",2035,"north carolina",15824219
+"data center",2035,"north dakota",13960075
+"data center",2035,"ohio",16919071
+"data center",2035,"oklahoma",3771729
+"data center",2035,"oregon",32680845
+"data center",2035,"pennsylvania",7168032
+"data center",2035,"rhode island",29149
+"data center",2035,"south carolina",5660170
+"data center",2035,"south dakota",256716
+"data center",2035,"tennessee",8472399
+"data center",2035,"texas",142190600
+"data center",2035,"utah",12271659
+"data center",2035,"vermont",0
+"data center",2035,"virginia",108024883
+"data center",2035,"washington",22060571
+"data center",2035,"west virginia",0
+"data center",2035,"wisconsin",421265
+"data center",2035,"wyoming",7081981
+"data center",2040,"alabama",5320500
+"data center",2040,"alaska",0
+"data center",2040,"arizona",37566033
+"data center",2040,"arkansas",0
+"data center",2040,"california",29467475
+"data center",2040,"colorado",8715115
+"data center",2040,"connecticut",797674
+"data center",2040,"delaware",80602
+"data center",2040,"district of columbia",189535
+"data center",2040,"florida",4068738
+"data center",2040,"georgia",32694252
+"data center",2040,"hawaii",122825
+"data center",2040,"idaho",589922
+"data center",2040,"illinois",31508497
+"data center",2040,"indiana",606072
+"data center",2040,"iowa",15855401
+"data center",2040,"kansas",1272804
+"data center",2040,"kentucky",5382319
+"data center",2040,"louisiana",232252
+"data center",2040,"maine",132357
+"data center",2040,"maryland",1885718
+"data center",2040,"massachusetts",4837900
+"data center",2040,"michigan",1688725
+"data center",2040,"minnesota",2227038
+"data center",2040,"mississippi",1410703
+"data center",2040,"missouri",3352270
+"data center",2040,"montana",2724883
+"data center",2040,"nebraska",13871852
+"data center",2040,"nevada",15723524
+"data center",2040,"new hampshire",80603
+"data center",2040,"new jersey",13689593
+"data center",2040,"new mexico",6127665
+"data center",2040,"new york",15593255
+"data center",2040,"north carolina",17725864
+"data center",2040,"north dakota",15641444
+"data center",2040,"ohio",18957222
+"data center",2040,"oklahoma",4226470
+"data center",2040,"oregon",36621205
+"data center",2040,"pennsylvania",8031292
+"data center",2040,"rhode island",30987
+"data center",2040,"south carolina",6341021
+"data center",2040,"south dakota",287544
+"data center",2040,"tennessee",9490762
+"data center",2040,"texas",159319579
+"data center",2040,"utah",13751606
+"data center",2040,"vermont",0
+"data center",2040,"virginia",121034385
+"data center",2040,"washington",24719824
+"data center",2040,"west virginia",0
+"data center",2040,"wisconsin",472148
+"data center",2040,"wyoming",7935957
+"data center",2045,"alabama",5960552
+"data center",2045,"alaska",0
+"data center",2045,"arizona",42093681
+"data center",2045,"arkansas",0
+"data center",2045,"california",33022783
+"data center",2045,"colorado",9766293
+"data center",2045,"connecticut",893869
+"data center",2045,"delaware",90995
+"data center",2045,"district of columbia",212291
+"data center",2045,"florida",4558323
+"data center",2045,"georgia",36628608
+"data center",2045,"hawaii",132689
+"data center",2045,"idaho",660987
+"data center",2045,"illinois",35306976
+"data center",2045,"indiana",679030
+"data center",2045,"iowa",17766603
+"data center",2045,"kansas",1426382
+"data center",2045,"kentucky",6030228
+"data center",2045,"louisiana",259990
+"data center",2045,"maine",151973
+"data center",2045,"maryland",2112648
+"data center",2045,"massachusetts",5420608
+"data center",2045,"michigan",1892273
+"data center",2045,"minnesota",2495258
+"data center",2045,"mississippi",1580387
+"data center",2045,"missouri",3755879
+"data center",2045,"montana",3053186
+"data center",2045,"nebraska",15546368
+"data center",2045,"nevada",17619902
+"data center",2045,"new hampshire",90997
+"data center",2045,"new jersey",15339038
+"data center",2045,"new mexico",6867254
+"data center",2045,"new york",17471994
+"data center",2045,"north carolina",19856841
+"data center",2045,"north dakota",17525658
+"data center",2045,"ohio",21241060
+"data center",2045,"oklahoma",4736098
+"data center",2045,"oregon",41036771
+"data center",2045,"pennsylvania",8998688
+"data center",2045,"rhode island",41406
+"data center",2045,"south carolina",7103869
+"data center",2045,"south dakota",322147
+"data center",2045,"tennessee",10631725
+"data center",2045,"texas",178514485
+"data center",2045,"utah",15409983
+"data center",2045,"vermont",0
+"data center",2045,"virginia",135612798
+"data center",2045,"washington",27699811
+"data center",2045,"west virginia",0
+"data center",2045,"wisconsin",529202
+"data center",2045,"wyoming",8892881
+"data center",2050,"alabama",6677712
+"data center",2050,"alaska",0
+"data center",2050,"arizona",47167353
+"data center",2050,"arkansas",0
+"data center",2050,"california",37006939
+"data center",2050,"colorado",10944197
+"data center",2050,"connecticut",1001485
+"data center",2050,"delaware",101519
+"data center",2050,"district of columbia",237763
+"data center",2050,"florida",5106875
+"data center",2050,"georgia",41037528
+"data center",2050,"hawaii",149784
+"data center",2050,"idaho",740549
+"data center",2050,"illinois",39563459
+"data center",2050,"indiana",760813
+"data center",2050,"iowa",19908105
+"data center",2050,"kansas",1598587
+"data center",2050,"kentucky",6756326
+"data center",2050,"louisiana",291485
+"data center",2050,"maine",170714
+"data center",2050,"maryland",2366892
+"data center",2050,"massachusetts",6073680
+"data center",2050,"michigan",2120349
+"data center",2050,"minnesota",2795700
+"data center",2050,"mississippi",1770459
+"data center",2050,"missouri",4208221
+"data center",2050,"montana",3420919
+"data center",2050,"nebraska",17422901
+"data center",2050,"nevada",19745118
+"data center",2050,"new hampshire",101237
+"data center",2050,"new jersey",17187374
+"data center",2050,"new mexico",7696167
+"data center",2050,"new york",19577291
+"data center",2050,"north carolina",22244829
+"data center",2050,"north dakota",19637220
+"data center",2050,"ohio",23800417
+"data center",2050,"oklahoma",5307205
+"data center",2050,"oregon",45984946
+"data center",2050,"pennsylvania",10082725
+"data center",2050,"rhode island",43171
+"data center",2050,"south carolina",7958790
+"data center",2050,"south dakota",360761
+"data center",2050,"tennessee",11910612
+"data center",2050,"texas",200024631
+"data center",2050,"utah",17268288
+"data center",2050,"vermont",0
+"data center",2050,"virginia",151949493
+"data center",2050,"washington",31039361
+"data center",2050,"west virginia",0
+"data center",2050,"wisconsin",592701
+"data center",2050,"wyoming",9965149
