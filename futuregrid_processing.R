@@ -1,8 +1,6 @@
-# Set working directory to this file's location
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-# if the rgcam package is not installed locally, use:
-#  devtools::install_github("JGCRI/rgcam)
+# If the rgcam package is not installed locally, use:
+#  devtools::install_github("JGCRI/rgcam")
 library(rgcam)
 library(dplyr)
 library(tidyr)
@@ -10,12 +8,17 @@ library(readr)
 library(ggplot2)
 library(patchwork)
 library(RColorBrewer)
+library(devtools)
+devtools::load_all()
 library(gcamdata)
 library(stringr)
 
+# Set working directory to this file's location
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
-GCAM_COMMIT_HASH <- "4479af"
+GCAM_COMMIT_HASH <- "edc5fb8"
 THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
 
 # Make a function to write out data files, appending commit hashes to the filename
@@ -276,7 +279,9 @@ gas_prices_state <- inner_join(gas_prices, state_mapping, by = c(region = "grid.
   filter(!region %in% EXCLUDED_STATES) %>%
   arrange(scenario, region, rate_class, year) %>%
   select(scenario, region, rate_class, year, price_USDperMMBTU)
-gas_prices_nation <- filter(gas_prices, region == "USA", rate_class == "Henry Hub")
+gas_prices_nation <- filter(gas_prices, region == "USA", rate_class %in% c( "Henry Hub",
+                                                                            "Residential and Commercial",
+                                                                            "Power and Industry" ) )
 
 write_stamp_csv(gas_prices_state, "gas_prices_state")
 write_stamp_csv(gas_prices_nation, "gas_prices_nation")
@@ -288,7 +293,8 @@ AEO_henryhub <- filter(AEO_tab13, `full name` == "Natural Gas: Henry Hub Spot Pr
   mutate(scenario = "AEO 2025 Reference") %>%
   select(scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
-  filter(scenario == "FutureGrid_Ref") %>%
+  filter(scenario == "FutureGrid_Ref",
+         rate_class == "Henry Hub") %>%
   select(scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
 ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scenario)) +
