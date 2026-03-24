@@ -18,7 +18,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
-GCAM_COMMIT_HASH <- "edc5fb8"
+GCAM_COMMIT_HASH <- "7cb7d9"
 THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
 
 # Make a function to write out data files, appending commit hashes to the filename
@@ -106,7 +106,7 @@ write_stamp_csv(elec_consumption_nation, "elec_consumption_nation")
 EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
 
 ref_elec_EER <- filter(EER_load_by_scenario, scenario == "reference") %>%
-  mutate(elec_EER = load_MWh / 1e6 / TWH_PER_EJ) %>%
+  mutate(elec_EER = load_MWh / 1e6) %>%
   select(region = state, year, elec_EER)
 
 ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
@@ -114,7 +114,7 @@ ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
          year %in% ANALYSIS_YEARS,
          scenario == "FutureGrid_Ref") %>%
   group_by(region, year) %>%
-  summarise(elec_GCAM = sum(value)) %>%
+  summarise(elec_GCAM = sum(value) * TWH_PER_EJ) %>%
   ungroup()
 
 ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "year")) %>%
@@ -131,21 +131,71 @@ ref_elec_comparison_nation <- ref_elec_comparison %>%
   ungroup()
   
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
-  mutate(highlight = if_else(abs(target_increase) < 0.09, FALSE, TRUE))
+  mutate(highlight = if_else(abs(target_increase) < 25, FALSE, TRUE))
   
-ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER * TWH_PER_EJ, y = elec_GCAM * TWH_PER_EJ, color = highlight)) +
+ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER, y = elec_GCAM, color = highlight)) +
   geom_point() +
   facet_wrap(~year) +
   geom_abline(slope = 1, intercept = 0) +
   xlab("EER TWh") +
   ylab("GCAM TWh") +
-  geom_text(data = filter(ref_elec_comparison_for_plot, abs(target_increase) > 0.09),
+  geom_text(data = filter(ref_elec_comparison_for_plot, abs(target_increase) > 25),
             aes(label = region),
             vjust = -0.5) +
   scale_color_manual(values = c("black", "red")) +
   theme(legend.position = "none")
 
 ggsave("figures/EER_GCAM_ref_comparison.png", width = 5, height = 5, units = "in")
+
+# Data center electricity consumption comparison with EER Reference scenario
+EER_data_center_projections_annual <- read_csv("data/EER_data_center_projections_annual.csv")
+
+ref_data_center_EER <- EER_data_center_projections_annual %>%
+  mutate(state.name = str_to_title(state),
+         state.name = sub(" Of ", " of ", state.name),
+         dc_TWh_EER = load_MWh / 1e6) %>%
+  left_join(state_mapping, by = "state.name") %>%
+  filter(!state.code %in% EXCLUDED_STATES) %>%
+  select(region = state.code, year, dc_TWh_EER)
+
+ref_data_center_GCAM <- getQuery(gcam_output.proj, "inputs by tech") %>%
+  filter(grepl("data center", sector),
+         year %in% ANALYSIS_YEARS,
+         scenario == "FutureGrid_Ref") %>%
+  group_by(region, year) %>%
+  summarise(dc_TWh_GCAM = sum(value) * TWH_PER_EJ) %>%
+  ungroup()
+
+ref_data_center_comparison <- left_join(ref_data_center_EER, ref_data_center_GCAM,
+                                        by = c("region", "year")) %>%
+  replace_na(list(dc_TWh_GCAM = 0)) %>%
+  group_by(region) %>%
+  mutate(diff = dc_TWh_EER - dc_TWh_GCAM)
+
+ref_data_center_comparison_nation <- ref_data_center_comparison %>%
+  group_by(year) %>%
+  summarise(dc_TWh_EER = sum(dc_TWh_EER),
+            dc_TWh_GCAM = sum(dc_TWh_GCAM),
+            diff = sum(diff)) %>%
+  ungroup()
+
+ref_data_center_comparison_for_plot <- filter(ref_data_center_comparison, year > 2021) %>%
+  mutate(highlight = if_else(abs(diff) < 25, FALSE, TRUE))
+
+ggplot(ref_data_center_comparison_for_plot, aes(x = dc_TWh_EER, y = dc_TWh_GCAM, color = highlight)) +
+  geom_point() +
+  facet_wrap(~year) +
+  geom_abline(slope = 1, intercept = 0) +
+  xlab("EER TWh") +
+  ylab("GCAM TWh") +
+  geom_text(data = filter(ref_data_center_comparison_for_plot, abs(diff) > 25),
+            aes(label = region),
+            vjust = -0.5) +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+ggsave("figures/EER_GCAM_ref_data_center_comparison.png", width = 5, height = 5, units = "in")
+
 
 # Electricity generation
 elec_gen_fuel_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
