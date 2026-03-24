@@ -9,12 +9,11 @@ library(ggplot2)
 library(patchwork)
 library(RColorBrewer)
 library(devtools)
-devtools::load_all()
 library(gcamdata)
 library(stringr)
 
-# Set working directory to this file's location
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# Set working directory to this file's location (fails on Mac)
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
