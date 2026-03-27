@@ -17,7 +17,7 @@ library(stringr)
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
-GCAM_COMMIT_HASH <- "7cb7d9"
+GCAM_COMMIT_HASH <- "27792b"
 THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
 
 # Make a function to write out data files, appending commit hashes to the filename
@@ -60,7 +60,7 @@ gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
 REQUERY_DATA <- FALSE
 if(REQUERY_DATA){
-  scenarios <- c("FutureGrid_Ref")
+  scenarios <- c("FutureGrid_Ref", "FutureGrid_LimitGas", "FutureGrid_HighGas")
 
   for(i in scenarios){
     conn <- localDBConn("/Users/d3p747/Desktop/stash/decarb/output", "database_basexdb")
@@ -179,7 +179,7 @@ ref_data_center_comparison_nation <- ref_data_center_comparison %>%
   ungroup()
 
 ref_data_center_comparison_for_plot <- filter(ref_data_center_comparison, year > 2021) %>%
-  mutate(highlight = if_else(abs(diff) < 25, FALSE, TRUE))
+  mutate(highlight = if_else(abs(diff) < 15, FALSE, TRUE))
 
 ggplot(ref_data_center_comparison_for_plot, aes(x = dc_TWh_EER, y = dc_TWh_GCAM, color = highlight)) +
   geom_point() +
@@ -187,7 +187,7 @@ ggplot(ref_data_center_comparison_for_plot, aes(x = dc_TWh_EER, y = dc_TWh_GCAM,
   geom_abline(slope = 1, intercept = 0) +
   xlab("EER TWh") +
   ylab("GCAM TWh") +
-  geom_text(data = filter(ref_data_center_comparison_for_plot, abs(diff) > 25),
+  geom_text(data = filter(ref_data_center_comparison_for_plot, abs(diff) > 15),
             aes(label = region),
             vjust = -0.5) +
   scale_color_manual(values = c("black", "red")) +
@@ -336,17 +336,24 @@ write_stamp_csv(gas_prices_state, "gas_prices_state")
 write_stamp_csv(gas_prices_nation, "gas_prices_nation")
 
 # Compare Henry Hub prices
-AEO_tab13 <- read_csv("data/AEO_Table13.csv") %>%
-  gather_years()
-AEO_henryhub <- filter(AEO_tab13, `full name` == "Natural Gas: Henry Hub Spot Price: Reference case") %>%
-  mutate(scenario = "AEO 2025 Reference") %>%
-  select(scenario, year, price_USDperMMBTU = value)
+AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
+  bind_rows(read_csv("data/AEO_Table13_HighOGS.csv"),
+            read_csv("data/AEO_Table13_LowOGS.csv")) %>%
+  filter(grepl("Henry Hub Spot Price", `full name`))  %>%
+  separate(`full name`, into = c("fuel", "variable", "scenario"), sep = ": ") %>%
+  mutate(scenario = if_else(scenario == "Reference case", "Reference",
+                            if_else(scenario == "High Oil and Gas Supply", "High Gas Supply", "Low Gas Supply"))) %>%
+  gather_years() %>%
+  mutate(model = "AEO2025") %>%
+  select(model, scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
-  filter(scenario == "FutureGrid_Ref",
-         rate_class == "Henry Hub") %>%
-  select(scenario, year, price_USDperMMBTU) %>%
+  mutate(model = "GCAM-USA",
+         scenario = if_else(scenario == "FutureGrid_Ref", "Reference",
+                            if_else(scenario == "FutureGrid_HighGas", "High Gas Supply", "Low Gas Supply"))) %>%
+  filter(rate_class == "Henry Hub") %>%
+  select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
-ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scenario)) +
+ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scenario, linetype = model)) +
   geom_line() +
   xlab("") +
   ylab("2024$ per mmbtu") +
@@ -478,8 +485,8 @@ lng_exports_with_shares <- lng_exports_by_region %>%
 
 # Fill all years > 2025 with the state's 2025 share
 lng_exports_with_shares <- lng_exports_with_shares %>%
-  group_by(State) %>%
-  arrange(State, year) %>%
+  group_by(scenario, State) %>%
+  arrange(scenario, State, year) %>%
   mutate(
     state_share = if_else(year > 2025, state_share[year == 2025], state_share)
   ) %>%
@@ -494,12 +501,13 @@ lng_exports_with_shares <- lng_exports_with_shares %>%
   
 # Plot result (only plot states with non-zero values):
 plot_df <- lng_exports_with_shares %>%
-  group_by(State) %>%
+  group_by(scenario, State) %>%
   filter(sum(value, na.rm = TRUE) > 0) %>%
   ungroup()
 
 p <- ggplot(plot_df,
        aes(x = year, y = value, fill = State)) +
+  facet_wrap(~scenario) +
   geom_col() +
   labs(
     title = "LNG exports by state",
