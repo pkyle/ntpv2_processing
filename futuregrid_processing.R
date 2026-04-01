@@ -1,6 +1,28 @@
+###################################################################################################
+###################################################################################################
+
+# User settings to be specified by before running script
+
+install_rgcam <- FALSE # TRUE if you need to install rgcam, FALSE if not
+
+gcamdata_installed <- TRUE # TRUE if gcamdata R package is installed, FALSE if not
+
+using_MAC <- TRUE # TRUE if using a MAC, FALSE if using a PC
+
+gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
+
+REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
+
+GCAM_COMMIT_HASH <- "27792b" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+                             # The model commit hash needs to be specified manually here
+
+###################################################################################################
+###################################################################################################
 
 # If the rgcam package is not installed locally, use:
-#  devtools::install_github("JGCRI/rgcam")
+if( install_rgcam == TRUE ){
+  devtools::install_github("JGCRI/rgcam")
+}
 library(rgcam)
 library(dplyr)
 library(tidyr)
@@ -9,15 +31,19 @@ library(ggplot2)
 library(patchwork)
 library(RColorBrewer)
 library(devtools)
+if( gcamdata_installed == FALSE ){
+    devtools::load_all( ) # Needed for users who don't install gcamdata, so that "library(gcamdata)" doesn't error
+}
 library(gcamdata)
 library(stringr)
 
 # Set working directory to this file's location (fails on Mac)
-#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+if( using_MAC == FALSE ){
+    setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
 
 # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script.
 # The model commit hash needs to be specified manually here, whereas the post-processing commit hash is available here
-GCAM_COMMIT_HASH <- "27792b"
 THIS_COMMIT_HASH <- substr(system("git rev-parse HEAD", intern = TRUE), 1, 6)
 
 # Make a function to write out data files, appending commit hashes to the filename
@@ -58,12 +84,12 @@ REPORTING_DIGITS_OMVAR <- 3               # number of decimal places for variabl
 # read rgcam proj file----
 gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
-REQUERY_DATA <- FALSE
+
 if(REQUERY_DATA){
   scenarios <- c("FutureGrid_Ref", "FutureGrid_LimitGas", "FutureGrid_HighGas")
 
   for(i in scenarios){
-    conn <- localDBConn("/Users/d3p747/Desktop/stash/decarb/output", "database_basexdb")
+    conn <- localDBConn( gcam_database_directory, "database_basexdb")
     gcam_output.proj <- addScenario(conn, gcam_output.proj, i, "rgcam/BatchQueries_futuregrid.xml", clobber = TRUE)
   }
 }
