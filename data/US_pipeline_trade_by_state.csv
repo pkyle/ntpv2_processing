@@ -1,0 +1,28 @@
+From_Country,From_State,To_Country,To_State,2025,2024,2023,2022,2021,2020
+Can,Alberta,US,Montana,144,144,144,144,144,144
+Can,British Columbia,US,Idaho,2891,2891,2741,2741,2741,2741
+Can,British Columbia,US,Washington,1832,1832,1832,1832,1832,1832
+Can,Manitoba,US,Minnesota,2991,2991,2991,2991,2991,2991
+Can,New Brunswick,US,Maine,833,833,833,833,833,833
+Can,Ontario,US,Michigan,3082,3082,3082,3082,3082,3082
+Can,Ontario,US,Minnesota,25,25,25,25,25,25
+Can,Ontario,US,New York,3315,3315,3315,3315,3315,3315
+Can,Quebec,US,New Hampshire,555,555,555,555,555,399
+Can,Quebec,US,Vermont,62,62,62,62,62,62
+Can,Saskatchewan,US,Montana,2383,2383,2383,2383,2383,2383
+Can,Saskatchewan,US,North Dakota,1924,1924,1924,1924,1924,1924
+Mex,Mexico,US,California,614,614,614,614,614,614
+Mex,Mexico,US,Texas,925,925,925,925,925,925
+US,Arizona,Mex,Mexico,1036,1036,1036,1036,1036,1036
+US,California,Mex,Mexico,1420,1420,1420,925,925,925
+US,Maine,Can,New Brunswick,926,926,926,926,926,833
+US,Michigan,Can,Ontario,4159,4159,4159,4159,4159,4159
+US,Minnesota,Can,Manitoba,713,713,713,713,713,713
+US,Minnesota,Can,Ontario,63,63,63,63,63,63
+US,Montana,Can,Saskatchewan,81,81,81,81,81,81
+US,New Hampshire,Can,Quebec,216,216,216,216,216,216
+US,New York,Can,Ontario,1350,1350,1350,1350,1350,1350
+US,North Dakota,Can,Saskatchewan,30,30,30,30,30,30
+US,Texas,Mex,Mexico,12057,12057,12057,12057,12057,12057
+US,Washington,Can,British Columbia,51,51,51,51,51,51
+,,,,,,,,,
