@@ -97,6 +97,9 @@ if(REQUERY_DATA){
 # List available queries:
 listQueries(gcam_output.proj, 'FutureGrid_Ref')
 
+###################################################################################################
+###################################################################################################
+
 # Key outputs from this script
 # Electricity consumption (TWh/yr) by scenario and year: state, nation
 # Electricity generation by scenario, technology, and year: by state, nation
@@ -104,8 +107,8 @@ listQueries(gcam_output.proj, 'FutureGrid_Ref')
 # Gas consumption by scenario, state, reporting category, and year
 # Gas production by scenario, state, and year
 # Gas trade:
-#   pipeline imports from Mexico and Canada
-#   pipeline exports to Mexico and Canada
+#   pipeline imports from Mexico and Canada (by country and to state)
+#   pipeline exports to Mexico and Canada (by country and from state)
 #   LNG imports: nation
 #   LNG exports: state, nation
 
@@ -126,6 +129,8 @@ elec_consumption_nation <- elec_consumption_state %>%
   ungroup()
 
 write_stamp_csv(elec_consumption_nation, "elec_consumption_nation")
+
+###################################################
 
 # Electricity consumption comparison with EER Reference scenario
 EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
@@ -171,6 +176,8 @@ ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER, y = elec_GCAM, color = hi
   theme(legend.position = "none")
 
 ggsave("figures/EER_GCAM_ref_comparison.png", width = 5, height = 5, units = "in")
+
+###################################################
 
 # Data center electricity consumption comparison with EER Reference scenario
 EER_data_center_projections_annual <- read_csv("data/EER_data_center_projections_annual.csv")
@@ -221,6 +228,7 @@ ggplot(ref_data_center_comparison_for_plot, aes(x = dc_TWh_EER, y = dc_TWh_GCAM,
 
 ggsave("figures/EER_GCAM_ref_data_center_comparison.png", width = 5, height = 5, units = "in")
 
+###################################################################################################
 
 # Electricity generation
 elec_gen_fuel_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
@@ -341,6 +349,8 @@ elec_consumption_datacenters_state <- getQuery(gcam_output.proj, "inputs by tech
 
 write_stamp_csv(elec_consumption_datacenters_state, "elec_consumption_datacenters_state")
 
+###################################################################################################
+
 # Gas prices
 gas_prices <- getQuery(gcam_output.proj, "prices by sector") %>%
   filter(sector %in% c("regional natural gas", "wholesale gas", "delivered gas"),
@@ -360,6 +370,8 @@ gas_prices_nation <- filter(gas_prices, region == "USA", rate_class %in% c( "Hen
 
 write_stamp_csv(gas_prices_state, "gas_prices_state")
 write_stamp_csv(gas_prices_nation, "gas_prices_nation")
+
+###################################################
 
 # Compare Henry Hub prices
 AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
@@ -388,6 +400,8 @@ ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scen
 ggsave("figures/gas_prices_HenryHub.png",
        width = 5, height = 3.5, units = "in", dpi = 300)
 
+###################################################################################################
+
 # Gas consumption by reporting category and state
 gas_consumption_nonelec <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(!region %in% EXCLUDED_STATES,
@@ -415,6 +429,8 @@ gas_consumption_sector_state <- bind_rows(gas_consumption_elec, gas_consumption_
 
 write_stamp_csv(gas_consumption_sector_state, "gas_consumption_sector_state")
 
+###################################################################################################
+
 # Gas production by state
 gas_production_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
   filter(sector == "natural gas production",
@@ -425,6 +441,8 @@ gas_production_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
   ungroup()
 
 write_stamp_csv(gas_production_state, "gas_production_state")
+
+###################################################################################################
 
 # Gas trade
 # Imports from Canada: equal to exports from Canada to N Amer pipeline market
@@ -465,6 +483,8 @@ Exports_LNG <- getQuery(gcam_output.proj, "outputs by tech") %>%
 gas_trade_nation <- bind_rows(Imports_Pipeline, Exports_Pipeline, Imports_LNG, Exports_LNG)
 
 write_stamp_csv(gas_trade_nation, "gas_trade_nation")
+
+###################################################
 
 # LNG exports by state
 # read in the data
@@ -546,11 +566,114 @@ p
 ggsave("figures/lng_exports_by_state.png", plot = p,
        width = 5, height = 3.5, units = "in", dpi = 300)
 
+###################################################
 
+# Gas pipeline imports and exports by state
 
+# Read in the data for historical pipeline trade
+US_pipeline_import_export <- read.csv( "data/US_pipeline_trade_by_state.csv" )
 
+# Process historical pipeline trade data
+future_gas_trade_years <- c( paste0( "X", seq( from = 2030, to = 2050, by = 5 ) ) )
+gas_trade_years <- c( "X2021", "X2025", future_gas_trade_years )
+gas_trade_years_no_X <- as.numeric( gsub( "X", "", gas_trade_years ) )
 
+US_pipeline_import_export_capacity <- US_pipeline_import_export %>%
+  mutate( From_Country = if_else( From_Country == "Can",
+                                  "Canada",
+                         if_else( From_Country == "Mex",
+                                  "Mexico",
+                         if_else( From_Country == "US",
+                                  "USA",
+                                  From_Country ) ) ),
+          To_Country = if_else( To_Country == "Can",
+                                "Canada",
+                       if_else( To_Country == "Mex",
+                                "Mexico",
+                       if_else( To_Country == "US",
+                                "USA",
+                                To_Country ) ) ),
+          From_State = if_else( From_Country %in% c( "Canada", "Mexico" ),
+                                From_Country,
+                                From_State ),
+          To_State = if_else( To_Country %in% c( "Canada", "Mexico" ),
+                              To_Country,
+                              To_State  ) ) %>%
+  group_by( From_Country, From_State, To_Country, To_State ) %>%
+  summarise_all( sum, na.rm = TRUE ) %>%
+  ungroup( ) %>%
+  # Extend forward to all future years
+  mutate( !!!setNames( rep( NA_real_,
+                       length( future_gas_trade_years ) ),
+                       future_gas_trade_years ),
+          across( all_of( future_gas_trade_years ), ~X2025 ) )  %>%
+  select( From_Country, From_State, To_Country, To_State, all_of( gas_trade_years ) ) %>%
+  gather( key = year, value = capacity, all_of( gas_trade_years ) )
 
+# Calculate shares
+US_pipeline_import_export_capacity_total <- US_pipeline_import_export_capacity %>%
+  select( -From_State, -To_State ) %>%
+  group_by( From_Country, To_Country, year ) %>%
+  summarise_all( sum, na.rm = TRUE ) %>%
+  ungroup( ) %>%
+  rename( capacity_total = capacity )
 
+US_pipeline_import_export_share <- US_pipeline_import_export_capacity %>%
+  left_join( US_pipeline_import_export_capacity_total, by = c( "From_Country", "To_Country", "year" ) ) %>%
+  mutate( share = capacity / capacity_total,
+          year = as.numeric( gsub( "X", "", year ) ) )
 
+# Calculate future imports and exports by state
+gas_trade_state <- gas_trade_nation %>%
+  mutate( year = as.numeric( year ) ) %>%
+  filter( Commodity == "Pipeline gas",
+          year %in% gas_trade_years_no_X ) %>%
+  rename( From_Country = From.Country,
+          To_Country = To.Country ) %>%
+  left_join( US_pipeline_import_export_share %>%
+               select( -capacity, -capacity_total ),
+             by = c( "From_Country", "To_Country", "year" ) ) %>%
+  mutate( Flow_Tbtu_by_state = Flow_Tbtu * share ) %>%
+  select( scenario, Commodity, From_Country, From_State, To_Country, To_State, year, Flow_Tbtu_by_state )
 
+write_stamp_csv( gas_trade_state, "gas_trade_pipeline_state" )
+
+# Plot exports by state
+plot_export_df <- gas_trade_state %>%
+  filter( From_Country == "USA" ) %>%
+  select( scenario, Commodity, From_Country, From_State, year, Flow_Tbtu_by_state ) %>%
+  group_by( scenario, Commodity, From_Country, From_State, year ) %>%
+  summarise_all( sum, na.rm = TRUE ) %>%
+  ungroup( )
+
+plot_export <- ggplot( plot_export_df,
+                       aes( x = year, y = Flow_Tbtu_by_state, fill = From_State ) ) +
+  facet_wrap( ~scenario ) +
+  geom_col( ) +
+  labs( title = "pipeline exports by state",
+        x = NULL,
+        y = "Tbtu" )
+
+ggsave( "figures/gas_pipeline_exports_by_state.png",
+        plot = plot_export,
+        width = 5, height = 3.5, units = "in", dpi = 300 )
+
+# Plot imports by state
+plot_imports_df <- gas_trade_state %>%
+  filter( To_Country == "USA" ) %>%
+  select( scenario, Commodity, To_Country, To_State, year, Flow_Tbtu_by_state ) %>%
+  group_by( scenario, Commodity, To_Country, To_State, year ) %>%
+  summarise_all( sum, na.rm = TRUE ) %>%
+  ungroup( )
+
+plot_import <- ggplot( plot_imports_df,
+                       aes( x = year, y = Flow_Tbtu_by_state, fill = To_State ) ) +
+  facet_wrap( ~scenario ) +
+  geom_col( ) +
+  labs( title = "pipeline imports by state",
+        x = NULL,
+        y = "Tbtu" )
+
+ggsave( "figures/gas_pipeline_imports_by_state.png",
+        plot = plot_import,
+        width = 5, height = 3.5, units = "in", dpi = 300 )
