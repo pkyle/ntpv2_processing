@@ -7,7 +7,7 @@ install_rgcam <- FALSE # TRUE if you need to install rgcam, FALSE if not
 
 gcamdata_installed <- TRUE # TRUE if gcamdata R package is installed, FALSE if not
 
-using_MAC <- TRUE # TRUE if using a MAC, FALSE if using a PC
+using_MAC <- FALSE # TRUE if using a MAC, FALSE if using a PC
 
 gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
@@ -80,6 +80,7 @@ REPORTING_DIGITS_GW <- 3               # number of decimals for capacity in giga
 REPORTING_DIGITS_CF <- 3               # number of decimals for capacity factors
 REPORTING_DIGITS_HEATRATE <- 4               # number of decimals for heat rates
 REPORTING_DIGITS_OMVAR <- 3               # number of decimal places for variable O&M costs
+WECC_states <- c("WA", "ID", "MT", "OR", "WY", "CA", "NV", "UT", "CO", "AZ", "NM")
 
 # read rgcam proj file----
 gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
@@ -102,7 +103,7 @@ listQueries(gcam_output.proj, 'FutureGrid_Ref')
 
 # Key outputs from this script
 # Electricity consumption (TWh/yr) by scenario and year: state, nation
-# Electricity generation by scenario, technology, and year: by state, nation
+# Electricity generation by scenario, technology, and year: by state, nation, for WECC region
 # Gas prices by scenario, consumption sector, and year: state, nation
 # Gas consumption by scenario, state, reporting category, and year
 # Gas production by scenario, state, and year
@@ -159,10 +160,10 @@ ref_elec_comparison_nation <- ref_elec_comparison %>%
             elec_GCAM = sum(elec_GCAM),
             target_increase = sum(target_increase)) %>%
   ungroup()
-  
+
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
   mutate(highlight = if_else(abs(target_increase) < 25, FALSE, TRUE))
-  
+
 ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER, y = elec_GCAM, color = highlight)) +
   geom_point() +
   facet_wrap(~year) +
@@ -249,6 +250,14 @@ elec_gen_fuel_nation <- elec_gen_fuel_state %>%
 
 write_stamp_csv(elec_gen_fuel_nation, "elec_gen_fuel_nation")
 
+elec_gen_fuel_WECC <- elec_gen_fuel_state %>%
+  filter(region %in% WECC_states) %>%
+  group_by(scenario, technology, year) %>%
+  summarise(generation_TWh = sum(generation_TWh)) %>%
+  ungroup()
+
+write_stamp_csv(elec_gen_fuel_WECC, "elec_gen_fuel_WECC")
+
 # Granular data for Task 4: output, capacity, capacity factors, fuel prices, and variable O&M costs by state, technology, and vintage
 # First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
 elec_gen_state_tech_vintage <- getQuery(gcam_output.proj, "elec gen by tech and vintage") %>%
@@ -304,7 +313,7 @@ fuelprices <- bind_rows(fuelprices_fromstate, fuelprices_fromgridregion, fuelpri
   replace_na(list(LHV_HHV = 1)) %>%
   mutate(fuelprice_USDperMMbtu = fuelprice_USDperGJ * LHV_HHV / CONV_GJ_MMBTU) %>%
   select(scenario, region, energy_input, year, fuelprice_USDperMMbtu)
-  
+
 
 # join in capacity factors, IOcoefficients (and heat rates), fuel prices (and fuel costs), OMvar
 # Manually fill in capacity factors for hydro and geothermal (not sure why geothermal doesn't appear in the capacity factor query)
@@ -412,7 +421,7 @@ gas_consumption_nonelec <- getQuery(gcam_output.proj, "inputs by tech") %>%
   group_by(scenario, region, sector, year) %>%
   summarise(consumption_Tbtu = round(sum(value) * CONV_NG_EJ_TBTU, digits = REPORTING_DIGITS_TBTU)) %>%
   ungroup()
-  
+
 gas_consumption_elec <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
   filter(grepl("generation", sector),
          !region %in% EXCLUDED_STATES,
@@ -488,7 +497,7 @@ write_stamp_csv(gas_trade_nation, "gas_trade_nation")
 
 # LNG exports by state
 # read in the data
-US_LNG_export_shares <- read.csv("data/US_LNG_exports_by_state.csv") 
+US_LNG_export_shares <- read.csv("data/US_LNG_exports_by_state.csv")
 
 # calculate LNG export share by state for 2021 and 2025
 shares <- US_LNG_export_shares %>%
@@ -514,7 +523,7 @@ shares_complete <- shares %>%
 
 # read in the LNG export query from GCAM-USA
 lng_exports_by_region <- getQuery(gcam_output.proj, "outputs by tech") %>%
-  filter(subsector == "USA traded LNG") 
+  filter(subsector == "USA traded LNG")
 
 # copy 2021 and 2025 shares to GCAM-USA data
 lng_exports_with_shares <- lng_exports_by_region %>%
@@ -544,7 +553,7 @@ lng_exports_with_shares <- lng_exports_with_shares %>%
   mutate(
     value = value * state_share
   )
-  
+
 # Plot result (only plot states with non-zero values):
 plot_df <- lng_exports_with_shares %>%
   group_by(scenario, State) %>%
