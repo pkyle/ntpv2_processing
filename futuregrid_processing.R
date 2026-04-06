@@ -7,7 +7,11 @@ install_rgcam <- FALSE # TRUE if you need to install rgcam, FALSE if not
 
 gcamdata_installed <- TRUE # TRUE if gcamdata R package is installed, FALSE if not
 
-using_MAC <- FALSE # TRUE if using a MAC, FALSE if using a PC
+if (Sys.info()[["sysname"]] == "Darwin") {
+  using_MAC <- TRUE
+} else if (Sys.info()[["sysname"]] == "Windows") {
+  using_MAC <- FALSE
+}
 
 gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
@@ -60,6 +64,7 @@ state_mapping <- read_csv("./mappings/state_mapping.csv")
 
 # define constants ----
 ANALYSIS_YEARS <- 2021:2050
+FUTURE_YEARS <- 2025:2050
 CONV_NG_EJ_QBTU <- 1/(1.0551 * .905)    # conversion from EJ LHV of natural gas to quadrillion btu HHV
 CONV_NG_EJ_TBTU <- CONV_NG_EJ_QBTU * 1000    # conversion from EJ LHV of natural gas to trillion btu HHV
 CONV_GJ_MMBTU <- 1/1.0551
@@ -161,6 +166,8 @@ ref_elec_comparison_nation <- ref_elec_comparison %>%
             target_increase = sum(target_increase)) %>%
   ungroup()
 
+write_stamp_csv(ref_elec_comparison_nation, "ref_elec_comparison_nation")
+
 ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
   mutate(highlight = if_else(abs(target_increase) < 25, FALSE, TRUE))
 
@@ -180,8 +187,43 @@ ggsave("figures/EER_GCAM_ref_comparison.png", width = 5, height = 5, units = "in
 
 ###################################################
 
+# Comparison at the sectoral level
+EER_sectoral_projections_annual <- read_csv("data/EER_sectoral_projections_annual.csv") %>%
+  mutate(elec_TWh = load_MWh / 1e6) %>%
+  select(scenario, region = state, EER_sector = sector, year, elec_TWh)
+elec_cons_sector_map <- read_csv("mappings/elec_cons_sector_map.csv")
+
+ref_elec_cons_sector_gcam <- getQuery(gcam_output.proj, "inputs by tech") %>%
+  filter(grepl("elect_td", input),
+         scenario %in% c("FutureGrid_Ref"),
+         !region %in% EXCLUDED_STATES,
+         year %in% FUTURE_YEARS) %>%
+  inner_join(elec_cons_sector_map, by = 'sector') %>%
+  group_by(scenario, region, EER_sector, year) %>%
+  summarise(elec_TWh = sum(value) * TWH_PER_EJ)
+
+ref_elec_cons_sector_comparison <- left_join(ref_elec_cons_sector_gcam,
+                                             filter(EER_sectoral_projections_annual, scenario == "reference"),
+                                             by = c("region", "EER_sector", "year"),
+                                             suffix = c("_GCAM", "_EER"))
+
+for(i in unique(ref_elec_cons_sector_comparison$EER_sector)){
+  ggplot(filter(ref_elec_cons_sector_comparison, EER_sector == i),
+         aes(x = elec_TWh_EER, y = elec_TWh_GCAM)) +
+    geom_point() +
+    facet_wrap(~year) +
+    geom_abline(slope = 1, intercept = 0) +
+    xlab("EER TWh") +
+    ylab("GCAM TWh") +
+    ggtitle(i)
+  
+  ggsave(paste0("figures/EER_GCAM_ref_", i, "_comparison.png"), width = 5, height = 5, units = "in")
+}
+
 # Data center electricity consumption comparison with EER Reference scenario
-EER_data_center_projections_annual <- read_csv("data/EER_data_center_projections_annual.csv")
+#EER_data_center_projections_annual <- read_csv("data/EER_data_center_projections_annual.csv")
+
+EER_data_center_projections_annual <- filter(EER_sectoral_projections_annual, scenario == "reference" & sector == "data centers")
 
 ref_data_center_EER <- EER_data_center_projections_annual %>%
   mutate(state.name = str_to_title(state),

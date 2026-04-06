@@ -1,0 +1,45 @@
+sector,EER_sector
+biomass liquids,productive
+cement,productive
+comm cooking,commercial
+comm cooling,commercial
+comm heating,commercial
+comm hot water,commercial
+comm lighting,commercial
+comm non-building,commercial
+comm office,commercial
+comm others,commercial
+comm refrigeration,commercial
+comm ventilation,commercial
+data center,data centers
+H2 central production,productive
+H2 industrial,productive
+H2 LDV,productive
+H2 liquid truck,productive
+H2 MHDV,productive
+H2 pipeline,productive
+LH2,productive
+oil refining,productive
+other industrial energy use,productive
+resid clothes dryers,residential
+resid clothes washers,residential
+resid computers,residential
+resid cooking,residential
+resid cooling,residential
+resid dishwashers,residential
+resid freezers,residential
+resid furnace fans,residential
+resid heating,residential
+resid hot water,residential
+resid lighting,residential
+resid others,residential
+resid refrigerators,residential
+resid televisions,residential
+trn_aviation_intl,transportation
+trn_freight,transportation
+trn_freight_road,transportation
+trn_pass,transportation
+trn_pass_road,transportation
+trn_pass_road_LDV,transportation
+trn_pass_road_LDV_4W,transportation
+trn_shipping_intl,transportation
