@@ -281,8 +281,6 @@ elec_gen_fuel_WECC <- elec_gen_fuel_state %>%
   summarise( generation_TWh_WECC = sum( generation_TWh_WECC ), .groups = "keep" ) %>%
   ungroup()
 
-write_stamp_csv(elec_gen_fuel_WECC, "elec_gen_fuel_WECC")
-
 GridPath_WECC_elec_gen <- read_csv( "data/GridPath_WECC_elec_gen-26_04_06.csv" ) %>%
   mutate( scenario = "GridPath",
           region = "WECC",
@@ -291,6 +289,8 @@ GridPath_WECC_elec_gen <- read_csv( "data/GridPath_WECC_elec_gen-26_04_06.csv" )
   select( colnames( elec_gen_fuel_WECC ) )
 
 WECC_comparison_data <- bind_rows( elec_gen_fuel_WECC, GridPath_WECC_elec_gen )
+
+write_stamp_csv( WECC_comparison_data, "elec_gen_tech_WECC")
 
 WECC_comparison_plot <- ggplot( WECC_comparison_data,
                 aes( fill = factor( technology,
