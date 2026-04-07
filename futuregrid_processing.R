@@ -17,8 +17,8 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "27792b" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
-                             # The model commit hash needs to be specified manually here
+GCAM_COMMIT_HASH <- "d99ad91" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+                              # The model commit hash needs to be specified manually here
 
 ###################################################################################################
 ###################################################################################################
@@ -84,7 +84,7 @@ REPORTING_DIGITS_GW <- 3               # number of decimals for capacity in giga
 REPORTING_DIGITS_CF <- 3               # number of decimals for capacity factors
 REPORTING_DIGITS_HEATRATE <- 4               # number of decimals for heat rates
 REPORTING_DIGITS_OMVAR <- 3               # number of decimal places for variable O&M costs
-WECC_states <- c("WA", "ID", "MT", "OR", "WY", "CA", "NV", "UT", "CO", "AZ", "NM")
+WECC_states <- c("WA", "ID", "MT", "OR", "WY", "CA", "NV", "UT", "CO", "AZ", "NM", "NE", "SD", "TX") # Based on data shared by Kostas on April 6, 2026
 
 # read rgcam proj file----
 gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
@@ -263,13 +263,69 @@ elec_gen_fuel_nation <- elec_gen_fuel_state %>%
 
 write_stamp_csv(elec_gen_fuel_nation, "elec_gen_fuel_nation")
 
+# WECC GridPath comparison
+WECC_fractions <- read_csv( "data/GridPath_WECC_elec_gen_fraction-26_04_06.csv" ) %>%
+  rename( region = state,
+          WECC_fraction = "Fraction of State in WECC" )
+
 elec_gen_fuel_WECC <- elec_gen_fuel_state %>%
   filter(region %in% WECC_states) %>%
-  group_by(scenario, technology, year) %>%
-  summarise(generation_TWh = sum(generation_TWh)) %>%
+  # Apply fractions from GridPath
+  left_join_error_no_match( WECC_fractions, by = c( "region" ) ) %>%
+  mutate( generation_TWh_WECC = generation_TWh * WECC_fraction,
+          technology = if_else( technology == "Rooftop_pv", "Solar", technology ) ) %>%
+  select( -generation_TWh, -WECC_fraction ) %>%
+  # Summarize to WECC region
+  mutate( region = "WECC" ) %>%
+  group_by( scenario, region, technology, year ) %>%
+  summarise( generation_TWh_WECC = sum( generation_TWh_WECC ), .groups = "keep" ) %>%
   ungroup()
 
 write_stamp_csv(elec_gen_fuel_WECC, "elec_gen_fuel_WECC")
+
+GridPath_WECC_elec_gen <- read_csv( "data/GridPath_WECC_elec_gen-26_04_06.csv" ) %>%
+  mutate( scenario = "GridPath",
+          region = "WECC",
+          technology = if_else( technology == "NG", "Gas", technology ) ) %>%
+  rename( generation_TWh_WECC = "WECC Total Generation (TWh)" ) %>%
+  select( colnames( elec_gen_fuel_WECC ) )
+
+WECC_comparison_data <- bind_rows( elec_gen_fuel_WECC, GridPath_WECC_elec_gen )
+
+WECC_comparison_plot <- ggplot( WECC_comparison_data,
+                aes( fill = factor( technology,
+                                    levels = c( "Geothermal",
+                                                "Solar",
+                                                "Wind",
+                                                "Biomass",
+                                                "Nuclear",
+                                                "Hydro",
+                                                "Gas",
+                                                "Refined Liquids",
+                                                "Coal" ) ),
+                     x = scenario,
+                     y = generation_TWh_WECC ) ) +
+  geom_bar( position = "stack", stat = "identity", width = 0.75 ) +
+  facet_wrap( ~year ) +
+  theme_bw( ) +
+  coord_cartesian( ylim = c( 0, 1500 ) ) +
+  scale_y_continuous( breaks = seq( 0, 1500, by = 250 ) ) +
+  #  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
+  scale_fill_manual( values = c( '#666666', # "Geothermal"
+                                 '#FFCC00', # "Solar"
+                                 '#0099FF', # "Wind"
+                                 '#00CC66', # "Biomass"
+                                 '#990000', # "Nuclear"
+                                 '#009999', # "Hydro"
+                                 '#6600CC', # "Gas"
+                                 '#FF3300', # "Refined Liquids"
+                                 '#000000'  # "Coal"
+                                 ) ) +
+  theme( legend.title = element_blank( ) )
+
+ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
+        width = 10, height = 5, units = "in", dpi = 300 )
+
 
 # Granular data for Task 4: output, capacity, capacity factors, fuel prices, and variable O&M costs by state, technology, and vintage
 # First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
