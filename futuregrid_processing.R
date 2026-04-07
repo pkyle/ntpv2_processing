@@ -63,8 +63,7 @@ price_mapping <- read_csv("./mappings/price_mapping.csv")
 state_mapping <- read_csv("./mappings/state_mapping.csv")
 
 # define constants ----
-ANALYSIS_YEARS <- 2021:2050
-FUTURE_YEARS <- 2025:2050
+ANALYSIS_YEARS <- 2025:2050
 CONV_NG_EJ_QBTU <- 1/(1.0551 * .905)    # conversion from EJ LHV of natural gas to quadrillion btu HHV
 CONV_NG_EJ_TBTU <- CONV_NG_EJ_QBTU * 1000    # conversion from EJ LHV of natural gas to trillion btu HHV
 CONV_GJ_MMBTU <- 1/1.0551
@@ -77,7 +76,7 @@ HOURS_PER_YEAR <- 8766
 gdp_deflator_1975_2021 <- 3.964         # conversion from 1975$ in GCAM output to 2021$ for reporting
 EJ_Tcf <- .981
 EJ_Mmcf <- 981000                       # conversion from million cubic feet of natural gas to EJ (LHV)
-EXCLUDED_STATES <- c("AK", "HI")        # Only CONUS states are tracked at this point
+EXCLUDED_STATES <- c("AK", "HI", "DC")        # Only CONUS states are tracked at this point. DC is omitted from EER scenarios
 REPORTING_STATES <- state_mapping$state.code[!state_mapping$state.code %in% EXCLUDED_STATES]
 REPORTING_DIGITS_TWH <- 3               # number of decimals for energy in TWh
 REPORTING_DIGITS_TBTU <- 1               # number of decimals for energy in Tbtu
@@ -92,7 +91,7 @@ gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
 
 if(REQUERY_DATA){
-  scenarios <- c("FutureGrid_Ref", "FutureGrid_LimitGas", "FutureGrid_HighGas")
+  scenarios <- c("FutureGrid_Ref")#, "FutureGrid_LimitGas", "FutureGrid_HighGas")
 
   for(i in scenarios){
     conn <- localDBConn( gcam_database_directory, "database_basexdb")
@@ -138,12 +137,16 @@ write_stamp_csv(elec_consumption_nation, "elec_consumption_nation")
 
 ###################################################
 
-# Electricity consumption comparison with EER Reference scenario
-EER_load_by_scenario <- read_csv("data/EER_load_by_scenario.csv")
-
-ref_elec_EER <- filter(EER_load_by_scenario, scenario == "reference") %>%
+# Electricity consumption comparisons with EER Reference scenario
+ref_elec_EER_sector <- read_csv("data/EER_sectoral_projections_annual.csv") %>%
+  filter(scenario == "reference") %>%
   mutate(elec_EER = load_MWh / 1e6) %>%
-  select(region = state, year, elec_EER)
+  select(region = state, EER_sector = sector, year, elec_EER)
+
+ref_elec_EER <- ref_elec_EER_sector %>%
+  group_by(region, year) %>%
+  summarise(elec_EER = sum(elec_EER)) %>%
+  ungroup()
 
 ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
   filter(grepl("elect_td", sector),
@@ -155,9 +158,7 @@ ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
 
 ref_elec_comparison <- left_join(ref_elec_EER, ref_elec_GCAM, by = c("region", "year")) %>%
   group_by(region) %>%
-  mutate(EER_growth = elec_EER - elec_EER[year == 2021],
-         GCAM_growth = elec_GCAM - elec_GCAM[year == 2021],
-         target_increase = EER_growth - GCAM_growth)
+  mutate(target_increase = elec_EER - elec_GCAM)
 
 ref_elec_comparison_nation <- ref_elec_comparison %>%
   group_by(year) %>%
@@ -168,7 +169,7 @@ ref_elec_comparison_nation <- ref_elec_comparison %>%
 
 write_stamp_csv(ref_elec_comparison_nation, "ref_elec_comparison_nation")
 
-ref_elec_comparison_for_plot <- filter(ref_elec_comparison, year > 2021) %>%
+ref_elec_comparison_for_plot <- ref_elec_comparison %>%
   mutate(highlight = if_else(abs(target_increase) < 25, FALSE, TRUE))
 
 ggplot(ref_elec_comparison_for_plot, aes(x = elec_EER, y = elec_GCAM, color = highlight)) +
@@ -188,88 +189,58 @@ ggsave("figures/EER_GCAM_ref_comparison.png", width = 5, height = 5, units = "in
 ###################################################
 
 # Comparison at the sectoral level
-EER_sectoral_projections_annual <- read_csv("data/EER_sectoral_projections_annual.csv") %>%
-  mutate(elec_TWh = load_MWh / 1e6) %>%
-  select(scenario, region = state, EER_sector = sector, year, elec_TWh)
 elec_cons_sector_map <- read_csv("mappings/elec_cons_sector_map.csv")
 
 ref_elec_cons_sector_gcam <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(grepl("elect_td", input),
          scenario %in% c("FutureGrid_Ref"),
-         !region %in% EXCLUDED_STATES,
+         !region %in% c(EXCLUDED_STATES, "DC"),
          year %in% FUTURE_YEARS) %>%
   inner_join(elec_cons_sector_map, by = 'sector') %>%
   group_by(scenario, region, EER_sector, year) %>%
-  summarise(elec_TWh = sum(value) * TWH_PER_EJ)
+  summarise(elec_GCAM = sum(value) * TWH_PER_EJ) %>%
+  ungroup()
 
 ref_elec_cons_sector_comparison <- left_join(ref_elec_cons_sector_gcam,
-                                             filter(EER_sectoral_projections_annual, scenario == "reference"),
-                                             by = c("region", "EER_sector", "year"),
-                                             suffix = c("_GCAM", "_EER"))
+                                             ref_elec_EER_sector,
+                                             by = c("region", "EER_sector", "year")) %>%
+  mutate(target_increase = elec_EER - elec_GCAM,
+         highlight = if_else(abs(target_increase) < 15, FALSE, TRUE))
 
 for(i in unique(ref_elec_cons_sector_comparison$EER_sector)){
   ggplot(filter(ref_elec_cons_sector_comparison, EER_sector == i),
-         aes(x = elec_TWh_EER, y = elec_TWh_GCAM)) +
+         aes(x = elec_EER, y = elec_GCAM, color = highlight)) +
     geom_point() +
     facet_wrap(~year) +
     geom_abline(slope = 1, intercept = 0) +
     xlab("EER TWh") +
     ylab("GCAM TWh") +
+    geom_text(data = filter(ref_elec_cons_sector_comparison, EER_sector == i & abs(target_increase) > 15),
+              aes(label = region),
+              vjust = -0.5) +
+    scale_color_manual(values = c("black", "red")) +
+    theme(legend.position = "none") +
     ggtitle(i)
   
   ggsave(paste0("figures/EER_GCAM_ref_", i, "_comparison.png"), width = 5, height = 5, units = "in")
 }
 
-# Data center electricity consumption comparison with EER Reference scenario
-#EER_data_center_projections_annual <- read_csv("data/EER_data_center_projections_annual.csv")
-
-EER_data_center_projections_annual <- filter(EER_sectoral_projections_annual, scenario == "reference" & sector == "data centers")
-
-ref_data_center_EER <- EER_data_center_projections_annual %>%
-  mutate(state.name = str_to_title(state),
-         state.name = sub(" Of ", " of ", state.name),
-         dc_TWh_EER = load_MWh / 1e6) %>%
-  left_join(state_mapping, by = "state.name") %>%
-  filter(!state.code %in% EXCLUDED_STATES) %>%
-  select(region = state.code, year, dc_TWh_EER)
-
-ref_data_center_GCAM <- getQuery(gcam_output.proj, "inputs by tech") %>%
-  filter(grepl("data center", sector),
-         year %in% ANALYSIS_YEARS,
-         scenario == "FutureGrid_Ref") %>%
-  group_by(region, year) %>%
-  summarise(dc_TWh_GCAM = sum(value) * TWH_PER_EJ) %>%
+ref_elec_cons_sector_comparison_nation <- ref_elec_cons_sector_comparison %>%
+  group_by(EER_sector, year) %>%
+  summarise(elec_GCAM = sum(elec_GCAM),
+            elec_EER = sum(elec_EER),
+            target_increase = sum(target_increase)) %>%
   ungroup()
 
-ref_data_center_comparison <- left_join(ref_data_center_EER, ref_data_center_GCAM,
-                                        by = c("region", "year")) %>%
-  replace_na(list(dc_TWh_GCAM = 0)) %>%
-  group_by(region) %>%
-  mutate(diff = dc_TWh_EER - dc_TWh_GCAM)
-
-ref_data_center_comparison_nation <- ref_data_center_comparison %>%
-  group_by(year) %>%
-  summarise(dc_TWh_EER = sum(dc_TWh_EER),
-            dc_TWh_GCAM = sum(dc_TWh_GCAM),
-            diff = sum(diff)) %>%
-  ungroup()
-
-ref_data_center_comparison_for_plot <- filter(ref_data_center_comparison, year > 2021) %>%
-  mutate(highlight = if_else(abs(diff) < 15, FALSE, TRUE))
-
-ggplot(ref_data_center_comparison_for_plot, aes(x = dc_TWh_EER, y = dc_TWh_GCAM, color = highlight)) +
+ggplot(ref_elec_cons_sector_comparison_nation,
+       aes(x = elec_EER, y = elec_GCAM, color = EER_sector)) +
   geom_point() +
   facet_wrap(~year) +
   geom_abline(slope = 1, intercept = 0) +
   xlab("EER TWh") +
-  ylab("GCAM TWh") +
-  geom_text(data = filter(ref_data_center_comparison_for_plot, abs(diff) > 15),
-            aes(label = region),
-            vjust = -0.5) +
-  scale_color_manual(values = c("black", "red")) +
-  theme(legend.position = "none")
+  ylab("GCAM TWh")
 
-ggsave("figures/EER_GCAM_ref_data_center_comparison.png", width = 5, height = 5, units = "in")
+ggsave("figures/EER_GCAM_ref_sector_nation_comparison.png", width = 5, height = 5, units = "in")
 
 ###################################################################################################
 
