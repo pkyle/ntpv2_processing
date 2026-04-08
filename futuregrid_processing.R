@@ -697,7 +697,8 @@ US_pipeline_import_export_capacity_total <- US_pipeline_import_export_capacity %
   rename( capacity_total = capacity )
 
 US_pipeline_import_export_share <- US_pipeline_import_export_capacity %>%
-  left_join( US_pipeline_import_export_capacity_total, by = c( "From_Country", "To_Country", "year" ) ) %>%
+  left_join( US_pipeline_import_export_capacity_total, by = c( "From_Country", "To_Country", "year" ),
+             relationship = "many-to-many" ) %>%
   mutate( share = capacity / capacity_total,
           year = as.numeric( gsub( "X", "", year ) ) )
 
