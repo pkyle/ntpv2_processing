@@ -91,7 +91,7 @@ gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
 
 if(REQUERY_DATA){
-  scenarios <- c("GCAM_RefElecDemand")
+  scenarios <- c("GCAM_RefElecDemand", "GCAM_HighElecDemand", "GCAM_LowElecDemand", "GCAM_RefElecDemand_HighGasPrice", "GCAM_RefElecDemand_LowGasPrice")
 
   for(i in scenarios){
     conn <- localDBConn( gcam_database_directory, "database_basexdb")
@@ -118,8 +118,8 @@ listQueries(gcam_output.proj, 'GCAM_RefElecDemand')
 #   LNG exports: state, nation
 
 # Electricity consumption
-elec_consumption_state <- getQuery(gcam_output.proj, "outputs by tech") %>%
-  filter(grepl("elect_td", sector),
+elec_consumption_state <- getQuery(gcam_output.proj, "inputs by tech") %>%
+  filter(grepl("elect_td", input),
          year %in% ANALYSIS_YEARS,
          !region %in% EXCLUDED_STATES) %>%
   group_by(scenario, region, year) %>%
@@ -247,10 +247,13 @@ ggsave("figures/EER_GCAM_ref_sector_nation_comparison.png", width = 5, height = 
 
 # Electricity generation
 elec_gen_fuel_state <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
-  filter(grepl("generation", sector) | technology == "rooftop_pv",
+  bind_rows(getQuery(gcam_output.proj, "outputs by tech")) %>%
+  filter(grepl("generation", sector) | technology == "rooftop_pv" | (grepl("cogen", technology) & output == "electricity"),
+         technology != "hydrogen cogen",
          year %in% ANALYSIS_YEARS,
-         !region %in% EXCLUDED_STATES) %>%
-  mutate(technology = str_to_title(subsector...5)) %>%
+         region %in% REPORTING_STATES) %>%
+  mutate(subsector = if_else(is.na(subsector), subsector...5, subsector),
+         technology = str_to_title(subsector)) %>%
   group_by(scenario, region, technology, year) %>%
   summarise(generation_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
   ungroup()
@@ -270,7 +273,8 @@ WECC_fractions <- read_csv( "data/GridPath_WECC_elec_gen_fraction-26_04_06.csv" 
           WECC_fraction = "Fraction of State in WECC" )
 
 elec_gen_fuel_WECC <- elec_gen_fuel_state %>%
-  filter(region %in% WECC_states) %>%
+  filter(scenario == "GCAM_RefElecDemand",
+         region %in% WECC_states) %>%
   # Apply fractions from GridPath
   left_join_error_no_match( WECC_fractions, by = c( "region" ) ) %>%
   mutate( generation_TWh_WECC = generation_TWh * WECC_fraction,
@@ -289,11 +293,11 @@ GridPath_WECC_elec_gen <- read_csv( "data/GridPath_WECC_elec_gen-26_04_06.csv" )
   rename( generation_TWh_WECC = "WECC Total Generation (TWh)" ) %>%
   select( colnames( elec_gen_fuel_WECC ) )
 
-WECC_comparison_data <- bind_rows( elec_gen_fuel_WECC, GridPath_WECC_elec_gen )
+WECC_total_elec_comparison_data <- bind_rows( elec_gen_fuel_WECC, GridPath_WECC_elec_gen )
 
-write_stamp_csv( WECC_comparison_data, "elec_gen_tech_WECC")
+write_stamp_csv( WECC_total_elec_comparison_data, "elec_gen_tech_WECC")
 
-WECC_comparison_plot <- ggplot( WECC_comparison_data,
+WECC_total_elec_comparison_plot <- ggplot( WECC_total_elec_comparison_data,
                 aes( fill = factor( technology,
                                     levels = c( "Geothermal",
                                                 "Solar",
@@ -327,6 +331,37 @@ WECC_comparison_plot <- ggplot( WECC_comparison_data,
 ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
         width = 10, height = 5, units = "in", dpi = 300 )
 
+# Check consumption in the WECC region as well, reference scenario
+EER_WECC_consumption <- ref_elec_EER %>%
+  inner_join(WECC_fractions, by = "region") %>%
+  mutate(EER_TWh = elec_EER * WECC_fraction) %>%
+  group_by(year) %>%
+  summarise(EER_Consumption_TWh = sum(EER_TWh)) %>%
+  ungroup()
+
+GCAM_WECC_consumption <- ref_elec_GCAM %>%
+  inner_join(WECC_fractions, by = "region") %>%
+  mutate(GCAM_TWh = elec_GCAM * WECC_fraction) %>%
+  group_by(year) %>%
+  summarise(GCAM_Consumption_TWh = sum(GCAM_TWh)) %>%
+  ungroup()
+
+GCAM_WECC_generation <- elec_gen_fuel_WECC %>%
+  group_by(year) %>%
+  summarise(GCAM_Generation_TWh = sum(generation_TWh_WECC)) %>%
+  ungroup()
+
+Gridpath_WECC_generation <- GridPath_WECC_elec_gen %>%
+  group_by(year) %>%
+  summarise(Gridpath_Generation_TWh = sum(generation_TWh_WECC)) %>%
+  ungroup()
+
+WECC_total_elec_comparison <- EER_WECC_consumption %>%
+  left_join(GCAM_WECC_consumption, by = "year") %>%
+  left_join(GCAM_WECC_generation, by = "year") %>%
+  left_join(Gridpath_WECC_generation, by = "year")
+
+write_stamp_csv(WECC_total_elec_comparison, "WECC_total_elec_comparison")
 
 # Granular data for Task 4: output, capacity, capacity factors, fuel prices, and variable O&M costs by state, technology, and vintage
 # First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
@@ -464,9 +499,10 @@ AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
   mutate(model = "AEO2025") %>%
   select(model, scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
+  filter(scenario %in% c("GCAM_RefElecDemand", "GCAM_RefElecDemand_HighGasPrice", "GCAM_RefElecDemand_LowGasPrice")) %>%
   mutate(model = "GCAM-USA",
          scenario = if_else(scenario == "GCAM_RefElecDemand", "Reference",
-                            if_else(scenario == "FutureGrid_HighGas", "High Gas Supply", "Low Gas Supply"))) %>%
+                            if_else(scenario == "GCAM_RefElecDemand_LowGasPrice", "High Gas Supply", "Low Gas Supply"))) %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
