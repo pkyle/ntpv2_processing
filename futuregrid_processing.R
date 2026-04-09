@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "d99ad91" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "8d8660" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 ###################################################################################################
@@ -91,7 +91,7 @@ gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
 
 if(REQUERY_DATA){
-  scenarios <- c("FutureGrid_Ref")#, "FutureGrid_LimitGas", "FutureGrid_HighGas")
+  scenarios <- c("GCAM_RefElecDemand")
 
   for(i in scenarios){
     conn <- localDBConn( gcam_database_directory, "database_basexdb")
@@ -100,7 +100,7 @@ if(REQUERY_DATA){
 }
 
 # List available queries:
-listQueries(gcam_output.proj, 'FutureGrid_Ref')
+listQueries(gcam_output.proj, 'GCAM_RefElecDemand')
 
 ###################################################################################################
 ###################################################################################################
@@ -148,10 +148,11 @@ ref_elec_EER <- ref_elec_EER_sector %>%
   summarise(elec_EER = sum(elec_EER)) %>%
   ungroup()
 
-ref_elec_GCAM <- getQuery(gcam_output.proj, "outputs by tech") %>%
-  filter(grepl("elect_td", sector),
+ref_elec_GCAM <- getQuery(gcam_output.proj, "inputs by tech") %>%
+  filter(grepl("elect_td", input),
          year %in% ANALYSIS_YEARS,
-         scenario == "FutureGrid_Ref") %>%
+         !region %in% EXCLUDED_STATES,
+         scenario == "GCAM_RefElecDemand") %>%
   group_by(region, year) %>%
   summarise(elec_GCAM = sum(value) * TWH_PER_EJ) %>%
   ungroup()
@@ -193,9 +194,9 @@ elec_cons_sector_map <- read_csv("mappings/elec_cons_sector_map.csv")
 
 ref_elec_cons_sector_gcam <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(grepl("elect_td", input),
-         scenario %in% c("FutureGrid_Ref"),
-         !region %in% c(EXCLUDED_STATES, "DC"),
-         year %in% FUTURE_YEARS) %>%
+         scenario %in% c("GCAM_RefElecDemand"),
+         !region %in% EXCLUDED_STATES,
+         year %in% ANALYSIS_YEARS) %>%
   inner_join(elec_cons_sector_map, by = 'sector') %>%
   group_by(scenario, region, EER_sector, year) %>%
   summarise(elec_GCAM = sum(value) * TWH_PER_EJ) %>%
@@ -464,7 +465,7 @@ AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
   select(model, scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
   mutate(model = "GCAM-USA",
-         scenario = if_else(scenario == "FutureGrid_Ref", "Reference",
+         scenario = if_else(scenario == "GCAM_RefElecDemand", "Reference",
                             if_else(scenario == "FutureGrid_HighGas", "High Gas Supply", "Low Gas Supply"))) %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
