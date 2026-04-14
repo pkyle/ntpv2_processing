@@ -748,7 +748,8 @@ gas_trade_state <- gas_trade_nation %>%
           To_Country = To.Country ) %>%
   left_join( US_pipeline_import_export_share %>%
                select( -capacity, -capacity_total ),
-             by = c( "From_Country", "To_Country", "year" ) ) %>%
+             by = c( "From_Country", "To_Country", "year" ),
+             relationship = "many-to-many" ) %>%
   mutate( Flow_Tbtu_by_state = Flow_Tbtu * share ) %>%
   select( scenario, Commodity, From_Country, From_State, To_Country, To_State, year, Flow_Tbtu_by_state )
 
