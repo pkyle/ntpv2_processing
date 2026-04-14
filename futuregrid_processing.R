@@ -453,11 +453,11 @@ elec_allvars_state_tech_vintage <- elec_gen_state_tech_vintage %>%
 
 write_stamp_csv(elec_allvars_state_tech_vintage, "elec_allvars_state_tech_vintage")
 
-# Write out the data center electricity consumption
+# Write out the data center electricity consumption. Here 2021 is included with the results.
 elec_consumption_datacenters_state <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(region %in% REPORTING_STATES,
          sector == "data center",
-         year %in% ANALYSIS_YEARS) %>%
+         year %in% 2021:2050) %>%
   mutate(consumption_TWh = value * TWH_PER_EJ) %>%
   select(scenario, region, sector, year, consumption_TWh)
 
