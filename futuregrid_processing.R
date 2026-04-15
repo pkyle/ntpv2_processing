@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "cee704" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "cee704f" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 ###################################################################################################
@@ -267,7 +267,9 @@ elec_gen_fuel_nation <- elec_gen_fuel_state %>%
 
 write_stamp_csv(elec_gen_fuel_nation, "elec_gen_fuel_nation")
 
-# WECC GridPath comparison
+###################################################################################################
+
+# WECC GridPath generation comparison
 WECC_fractions <- read_csv( "data/GridPath_WECC_elec_gen_fraction-26_04_06.csv" ) %>%
   rename( region = state,
           WECC_fraction = "Fraction of State in WECC" )
@@ -331,7 +333,137 @@ WECC_total_elec_comparison_plot <- ggplot( WECC_total_elec_comparison_data,
 ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
         width = 10, height = 5, units = "in", dpi = 300 )
 
-# Check consumption in the WECC region as well, reference scenario
+###################################################################################################
+
+# AEO 2025 electricity generation comparisons
+
+  # AEO map
+  AEO_elec_map <- read_csv( "mappings/AEO_2025_elec_gen_map.csv" )
+
+  # Process AEO data
+  AEO_elec_generation <- bind_rows( read_csv( "data/AEO_Table_54-WECC_B.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-WECC_R.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-WECC_NWPPA.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-WECC_CA_S.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-WECC_CA_N.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-WECC_SW.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_54-USA.csv", skip = 5 ) %>% mutate( region = "USA" ) ) %>%
+    left_join( AEO_elec_map, by = c( "sector", "type", "full name" ),
+               relationship = "many-to-many" ) %>%
+    filter( technology != "not_a_fuel_type" ) %>%
+    mutate( scenario = "AEO (2025) Ref" ) %>%
+    select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
+    gather_years() %>%
+    # Summarize
+    # Label as "TWh", as this is equivalent to the reported unit of billion kWh (BkWh)
+    group_by( scenario, region, technology, year ) %>%
+    summarize( generation_TWh = sum( value ) ) %>%
+    ungroup()
+
+  # Calculate AEO non-WECC
+  AEO_elec_generation_nonWECC <- AEO_elec_generation %>%
+    filter( region == "USA" ) %>%
+    rename( generation_TWh_USA = generation_TWh ) %>%
+    select( -region ) %>%
+    left_join( AEO_elec_generation %>%  filter( region == "WECC" ) %>%
+                 rename( generation_TWh_WECC = generation_TWh ) %>%
+                 select( -region ),
+               by = c( "scenario", "technology", "year" ) ) %>%
+    mutate( generation_TWh = generation_TWh_USA - generation_TWh_WECC,
+            region = "Non_WECC" ) %>%
+    select( colnames( AEO_elec_generation ) )
+
+  AEO_elec_generation <- bind_rows( AEO_elec_generation, AEO_elec_generation_nonWECC )
+
+
+  # Process GCAM data
+  elec_gen_fuel_AEO_comp <- elec_gen_fuel_nation %>%
+    mutate( region = "USA" ) %>%
+    filter( scenario == "GCAM_RefElecDemand" ) %>%
+    select( scenario, region, technology, year, generation_TWh ) %>%
+    bind_rows( elec_gen_fuel_WECC %>%
+                 rename( generation_TWh = generation_TWh_WECC ) ) %>%
+    # Remap to AEO comparison categories
+    mutate( technology = if_else( technology %in% c( "Hydro",
+                                                     "Geothermal",
+                                                     "Biomass",
+                                                     "Rooftop_pv",
+                                                     "Solar",
+                                                     "Wind" ),
+                                  "Renewable",
+                                  technology ) ) %>%
+    group_by( scenario, region, technology, year ) %>%
+    summarize( generation_TWh = sum( generation_TWh ) ) %>%
+    ungroup()
+
+  elec_gen_fuel_nonWECC <- elec_gen_fuel_AEO_comp %>%
+    filter( region == "USA" ) %>%
+    rename( generation_TWh_USA = generation_TWh ) %>%
+    select( - region ) %>%
+    left_join( elec_gen_fuel_AEO_comp %>%
+                 filter( region == "WECC" ) %>%
+                 rename( generation_TWh_WECC = generation_TWh ) %>%
+                 select( -region ),
+               by = c( "scenario", "technology", "year" ) ) %>%
+    mutate( generation_TWh = generation_TWh_USA - generation_TWh_WECC,
+            region = "Non_WECC" ) %>%
+    select( colnames( elec_gen_fuel_AEO_comp ) )
+
+  elec_gen_fuel_AEO_comp <- bind_rows( elec_gen_fuel_AEO_comp, elec_gen_fuel_nonWECC )
+
+  # Graph and save data
+  elec_gen_AEO_fuel_region_comparison_data <- bind_rows( elec_gen_fuel_AEO_comp,
+                                                         AEO_elec_generation )
+
+  write_stamp_csv( elec_gen_AEO_fuel_region_comparison_data, "elec_gen_tech_AEO_comparison" )
+
+  aeo_elec_comp_fun <- function( data, region_of_interest ){
+
+      data_region <- data %>% filter( region == region_of_interest)
+
+      plot <- ggplot( data_region,
+                        aes( fill = factor( technology,
+                                            levels = c( "Other",
+                                                        "Renewable",
+                                                        "Nuclear",
+                                                        "Gas",
+                                                        "Refined Liquids",
+                                                        "Coal" ) ),
+                                                      x = scenario,
+                                                      y = generation_TWh ) ) +
+        geom_bar( position = "stack", stat = "identity", width = 0.75 ) +
+        facet_wrap( ~year ) +
+        theme_bw( ) +
+        coord_cartesian( ylim = c( -100, 7000 ) ) +
+        scale_y_continuous( breaks = seq( 0, 7000, by = 1000 ) ) +
+        #  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
+        scale_fill_manual( values = c( '#666666', # "Other"
+                                       '#00CC66', # "Renewable"
+                                       '#990000', # "Nuclear"
+                                       '#009999', # "Hydro"
+                                       '#6600CC', # "Gas"
+                                       '#FF3300', # "Refined Liquids"
+                                       '#000000'  # "Coal"
+                                      ) ) +
+        theme( legend.title = element_blank( ) )
+
+      ggsave( paste0( "figures/AEO__elec_gen_by_tech_comparison-", region_of_interest, ".png" ),
+              width = 10, height = 5, units = "in", dpi = 300 )
+
+  }
+
+  aeo_elec_comp_fun( data = elec_gen_AEO_fuel_region_comparison_data,
+                     region_of_interest = "USA" )
+
+  aeo_elec_comp_fun( data = elec_gen_AEO_fuel_region_comparison_data,
+                     region_of_interest = "WECC" )
+
+  aeo_elec_comp_fun( data = elec_gen_AEO_fuel_region_comparison_data,
+                     region_of_interest = "Non_WECC" )
+
+###################################################################################################
+
+# WECC GridPath electricity consumption comparison
 EER_WECC_consumption <- ref_elec_EER %>%
   inner_join(WECC_fractions, by = "region") %>%
   mutate(EER_TWh = elec_EER * WECC_fraction) %>%
@@ -362,6 +494,9 @@ WECC_total_elec_comparison <- EER_WECC_consumption %>%
   left_join(Gridpath_WECC_generation, by = "year")
 
 write_stamp_csv(WECC_total_elec_comparison, "WECC_total_elec_comparison")
+
+
+###################################################################################################
 
 # Granular data for Task 4: output, capacity, capacity factors, fuel prices, and variable O&M costs by state, technology, and vintage
 # First compile elec gen by state, technology, and vintage. The output quantities are the weighting factors for all per-unit variables
