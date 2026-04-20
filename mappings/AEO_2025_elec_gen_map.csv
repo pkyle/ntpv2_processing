@@ -20,3 +20,13 @@ End-Use Sectors,Total,Electricity: End-Use Sectors: Generation: Total: Reference
 End-Use Sectors,Sales to the Grid,Electricity: End-Use Sectors: Generation: Sales to the Grid: Reference case,not_a_fuel_type
 End-Use Sectors,Generation for Own Use,Electricity: End-Use Sectors: Generation: Generation for Own Use: Reference case,not_a_fuel_type
 Total Electricity Generation,Total Electricity Generation,Electricity: Total Electricity Generation: Reference case,not_a_fuel_type
+,Solar Thermal,Renewable Energy: Electric Power Sector: Electricity Generation: Solar Thermal: Reference case,Solar CSP
+,Solar Photovoltaic,Renewable Energy: Electric Power Sector: Electricity Generation: Solar Photovoltaic: Reference case,Solar PV
+,Onshore Wind,Renewable Energy: Electric Power Sector: Electricity Generation: Onshore Wind: Reference case,Wind Onshore
+,Offshore Wind,Renewable Energy: Electric Power Sector: Electricity Generation: Offshore Wind: Reference case,Wind Offshore
+,Solar Photovoltaic,Renewable Energy: End-Use Sector: Electricity Generation: Solar Photovoltaic: Reference case,Solar PV
+,Wind,Renewable Energy: End-Use Sector: Electricity Generation: Wind: Reference case,Wind Onshore
+,Conventional Hydroelectric Power,Renewable Energy: All Sectors: Electricity Generation: Hydropower: Reference case,Hydro
+,Geothermal,Renewable Energy: All Sectors: Electricity Generation: Geothermal: Reference case,Geothermal
+,Municipal Waste,Renewable Energy: All Sectors: Electricity Generation: Municipal Waste: Reference case,Biomass
+,Wood and Other Biomass,Renewable Energy: All Sectors: Electricity Generation: Wood and Other Biomass: Reference case,Biomass

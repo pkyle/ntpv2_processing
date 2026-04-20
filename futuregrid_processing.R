@@ -375,41 +375,68 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
 
   AEO_elec_generation <- bind_rows( AEO_elec_generation, AEO_elec_generation_nonWECC )
 
-
-  # Process GCAM data
-  elec_gen_fuel_AEO_comp <- elec_gen_fuel_nation %>%
-    mutate( region = "USA" ) %>%
-    filter( scenario == "GCAM_RefElecDemand" ) %>%
-    select( scenario, region, technology, year, generation_TWh ) %>%
-    bind_rows( elec_gen_fuel_WECC %>%
-                 rename( generation_TWh = generation_TWh_WECC ) ) %>%
-    # Remap to AEO comparison categories
-    mutate( technology = if_else( technology %in% c( "Hydro",
-                                                     "Geothermal",
-                                                     "Biomass",
-                                                     "Rooftop_pv",
-                                                     "Solar",
-                                                     "Wind" ),
-                                  "Renewable",
-                                  technology ) ) %>%
+# Downscale Table 54's "Renewables" category to specific renewable technologies based on Table 56
+  AEO_renewable_generation <- bind_rows( read_csv( "data/AEO_Table_56-WECC_B.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-WECC_R.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-WECC_NWPPA.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-WECC_CA_S.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-WECC_CA_N.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-WECC_SW.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_Table_56-USA.csv", skip = 4 ) %>% mutate( region = "USA" ) ) %>%
+    inner_join( AEO_elec_map, by = c( "type", "full name" )) %>%
+    mutate( scenario = "AEO (2025) Ref" ) %>%
+    select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
+    gather_years() %>%
+    # Summarize
+    # Label as "TWh", as this is equivalent to the reported unit of billion kWh (BkWh)
     group_by( scenario, region, technology, year ) %>%
-    summarize( generation_TWh = sum( generation_TWh ) ) %>%
+    summarize( generation_TWh = sum( value ) ) %>%
     ungroup()
-
-  elec_gen_fuel_nonWECC <- elec_gen_fuel_AEO_comp %>%
+  
+  AEO_renewable_generation_nonWECC <- AEO_renewable_generation %>%
     filter( region == "USA" ) %>%
     rename( generation_TWh_USA = generation_TWh ) %>%
-    select( - region ) %>%
-    left_join( elec_gen_fuel_AEO_comp %>%
-                 filter( region == "WECC" ) %>%
+    select( -region ) %>%
+    left_join( AEO_renewable_generation %>%  filter( region == "WECC" ) %>%
                  rename( generation_TWh_WECC = generation_TWh ) %>%
                  select( -region ),
                by = c( "scenario", "technology", "year" ) ) %>%
     mutate( generation_TWh = generation_TWh_USA - generation_TWh_WECC,
             region = "Non_WECC" ) %>%
-    select( colnames( elec_gen_fuel_AEO_comp ) )
-
-  elec_gen_fuel_AEO_comp <- bind_rows( elec_gen_fuel_AEO_comp, elec_gen_fuel_nonWECC )
+    select( colnames( AEO_renewable_generation ) )
+  
+  AEO_renewable_generation <- bind_rows( AEO_renewable_generation, AEO_renewable_generation_nonWECC )
+  
+  AEO_elec_generation <- filter(AEO_elec_generation, technology != "Renewable") %>%
+    bind_rows(AEO_renewable_generation) %>%
+    arrange(scenario, region, technology, year)
+  
+  # Process GCAM data - re-aggregate from model queries in order to differentiate solar and wind categories
+  elec_gen_fuel_AEO_comp_WECC <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
+    bind_rows(getQuery(gcam_output.proj, "outputs by tech")) %>%
+    filter(scenario == "GCAM_RefElecDemand",
+           grepl("generation", sector) | technology == "rooftop_pv" | (grepl("cogen", technology) & output == "electricity"),
+           technology != "hydrogen cogen",
+           year %in% ANALYSIS_YEARS,
+           region %in% REPORTING_STATES) %>%
+    mutate(region = if_else(region %in% WECC_states, "WECC", "non-Non_WECC"),
+           subsector = if_else(is.na(subsector), subsector...5, subsector),
+           subsector = if_else(grepl("offshore", technology), "Wind Offshore", subsector),
+           subsector = if_else(grepl("wind", technology) & !grepl("offshore", technology), "Wind Onshore", subsector),
+           subsector = if_else(grepl("CSP", technology), "Solar CSP", subsector),
+           subsector = if_else(grepl("PV", technology, ignore.case = TRUE), "Solar PV", subsector),
+           technology = tools::toTitleCase(subsector)) %>%
+    group_by(scenario, region, technology, year) %>%
+    summarise(generation_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
+    ungroup()
+  
+  elec_gen_fuel_AEO_comp_USA <- elec_gen_fuel_AEO_comp_WECC %>%
+    mutate(region = "USA") %>%
+    group_by(scenario, region, technology, year) %>%
+    summarise(generation_TWh = sum(generation_TWh)) %>%
+    ungroup()
+  
+  elec_gen_fuel_AEO_comp <- bind_rows(elec_gen_fuel_AEO_comp_USA, elec_gen_fuel_AEO_comp_WECC)
 
   # Graph and save data
   elec_gen_AEO_fuel_region_comparison_data <- bind_rows( elec_gen_fuel_AEO_comp,
@@ -424,7 +451,13 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
       plot <- ggplot( data_region,
                         aes( fill = factor( technology,
                                             levels = c( "Other",
-                                                        "Renewable",
+                                                        "Wind Offshore",
+                                                        "Wind Onshore",
+                                                        "Solar PV",
+                                                        "Solar CSP",
+                                                        "Geothermal",
+                                                        "Hydro",
+                                                        "Biomass",
                                                         "Nuclear",
                                                         "Gas",
                                                         "Refined Liquids",
@@ -438,11 +471,16 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
         scale_y_continuous( breaks = seq( 0, 7000, by = 1000 ) ) +
         #  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
         scale_fill_manual( values = c( '#666666', # "Other"
-                                       '#00CC66', # "Renewable"
-                                       '#990000', # "Nuclear"
+                                       'skyblue', # "Wind Offshore"
+                                       'magenta', # "Wind Onshore"
+                                       'gray90',  # "Solar PV"
+                                       'red',     # "Solar CSP"
+                                       'yellow',  # "Geothermal"
                                        '#009999', # "Hydro"
-                                       '#6600CC', # "Gas"
-                                       '#FF3300', # "Refined Liquids"
+                                       '#00CC66', # "Biomass"
+                                       'orange',  # "Nuclear"
+                                       'blue',    # "Gas"
+                                       'brown',   # "Refined Liquids"
                                        '#000000'  # "Coal"
                                       ) ) +
         theme( legend.title = element_blank( ) )
