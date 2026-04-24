@@ -30,3 +30,22 @@ Total Electricity Generation,Total Electricity Generation,Electricity: Total Ele
 ,Geothermal,Renewable Energy: All Sectors: Electricity Generation: Geothermal: Reference case,Geothermal
 ,Municipal Waste,Renewable Energy: All Sectors: Electricity Generation: Municipal Waste: Reference case,Biomass
 ,Wood and Other Biomass,Renewable Energy: All Sectors: Electricity Generation: Wood and Other Biomass: Reference case,Biomass
+Electric Power Sector,Coal,Electricity Capacity: Electric Power Sector: Power Only: Coal: Reference case,Coal
+Electric Power Sector,Fossil Steam,Electricity Capacity: Electric Power Sector: Power Only: Fossil Steam: Reference case,Coal
+Electric Power Sector,Combined Cycle,Electricity Capacity: Electric Power Sector: Power Only: Combined Cycle: Reference case,Gas
+Electric Power Sector,Combustion Turbine/Diesel,Electricity Capacity: Electric Power Sector: Power Only: Combustion Turbine/Diesel: Reference case,Gas
+Electric Power Sector,Nuclear Power,Electricity Capacity: Electric Power Sector: Power Only: Nuclear: Reference case,Nuclear
+Electric Power Sector,Pumped Storage,Electricity Capacity: Electric Power Sector: Power Only: Pumped Storage: Reference case,Hydro
+Electric Power Sector,Diurnal Storage,Electricity Capacity: Electric Power Sector: Power Only: Diurnal Storage: Reference case,Other
+Electric Power Sector,Hydrogen,Electricity Capacity: Electric Power Sector: Power Only: Hydrogen: Reference case,Other
+Electric Power Sector,Fuel Cells,Electricity Capacity: Electric Power Sector: Power Only: Fuel Cells: Reference case,Other
+Electric Power Sector,Renewable Sources,Electricity Capacity: Electric Power Sector: Power Only: Renewable Sources: Reference case,Renewable
+Electric Power Sector,Distributed Generation (Natural Gas),Electricity Capacity: Electric Power Sector: Power Only: Distributed Generation: Reference case,Gas
+Electric Power Sector,Conventional Hydroelectric Power,Renewable Energy: Electric Power Sector: Generating Capacity: Hydropower: Reference case,Hydro
+Electric Power Sector,Geothermal,Renewable Energy: Electric Power Sector: Generating Capacity: Geothermal: Reference case,Geothermal
+Electric Power Sector,Municipal Waste,Renewable Energy: Electric Power Sector: Generating Capacity: Municipal Waste: Reference case,Biomass
+Electric Power Sector,Wood and Other Biomass,Renewable Energy: Electric Power Sector: Generating Capacity: Wood and Other Biomass: Reference case,Biomass
+Electric Power Sector,Solar Thermal,Renewable Energy: Electric Power Sector: Generating Capacity: Solar Thermal: Reference case,Solar CSP
+Electric Power Sector,Solar Photovoltaic,Renewable Energy: Electric Power Sector: Generating Capacity: Solar Photovoltaic: Reference case,Solar PV
+Electric Power Sector,Onshore Wind,Renewable Energy: Electric Power Sector: Generating Capacity: Onshore Wind: Reference case,Wind Onshore
+Electric Power Sector,Offshore Wind,Renewable Energy: Electric Power Sector: Generating Capacity: Offshore Wind: Reference case,Wind Offshore

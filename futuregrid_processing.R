@@ -636,6 +636,260 @@ elec_consumption_datacenters_state <- getQuery(gcam_output.proj, "inputs by tech
 
 write_stamp_csv(elec_consumption_datacenters_state, "elec_consumption_datacenters_state")
 
+
+# Compare GCAM and AEO 2025 electricity capacities --------------
+# Disclaimer: Some of the disparities in capacities are due to the imperfect technology mapping between GCAM and AEO, see the mapping file for details
+
+# First read in WECC and USA capacities from AEO Table 56, and map to GCAM technologies
+AEO_elec_capacity <- bind_rows(
+  read_csv("data/AEO_Table_56-WECC_B.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-WECC_R.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-WECC_NWPPA.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-WECC_CA_S.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-WECC_CA_N.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-WECC_SW.csv", skip = 4) %>% mutate(region = "WECC"),
+  read_csv("data/AEO_Table_56-USA.csv", skip = 4) %>% mutate(region = "USA")
+) %>%
+  filter(grepl("gigawatts|GW", units, ignore.case = TRUE)) %>%
+  inner_join(
+    AEO_elec_map,
+    by = c("type", "full name")
+  ) %>%
+  mutate(scenario = "AEO (2025) Ref") %>%
+  select(
+    scenario, region, technology, units,
+    all_of(paste(seq(from = min(ANALYSIS_YEARS),
+                     to = max(ANALYSIS_YEARS),
+                     by = 5)))
+  ) %>%
+  gather_years() %>%
+  group_by(scenario, region, technology, year) %>%
+  summarise(
+    capacity_GW = sum(value),
+    .groups = "drop"
+  )
+
+# Calculate AEO non-WECC capacities 
+AEO_elec_capacity_nonWECC <- AEO_elec_capacity %>%
+  filter(region == "USA") %>%
+  rename(capacity_GW_USA = capacity_GW) %>%
+  select(-region) %>%
+  left_join(
+    AEO_elec_capacity %>%
+      filter(region == "WECC") %>%
+      rename(capacity_GW_WECC = capacity_GW) %>%
+      select(-region),
+    by = c("scenario", "technology", "year")
+  ) %>%
+  mutate(
+    capacity_GW = capacity_GW_USA - capacity_GW_WECC,
+    region = "Non_WECC"
+  ) %>%
+  select(colnames(AEO_elec_capacity))
+
+AEO_elec_capacity <- bind_rows(AEO_elec_capacity, AEO_elec_capacity_nonWECC)
+
+
+# Read in other (non-renewable) electricity capacities from AEO Table 9
+AEO_elec_cap_non_RE <- read_csv("data/AEO_Table_9.csv", skip = 4) %>%
+  filter(`...1` != "Renewable Sources") %>%
+  mutate(scenario = "AEO (2025) Ref") %>%
+  left_join(AEO_elec_map, by = "full name") %>%
+  filter(!is.na(technology), technology != "not_a_fuel_type") %>%
+  select(
+    scenario,
+    technology,
+    units,
+    all_of(paste(seq(from = min(ANALYSIS_YEARS),
+                     to = max(ANALYSIS_YEARS),
+                     by = 5)))
+  ) %>%
+  gather_years() %>%
+  group_by(scenario, technology, year) %>%
+  summarise(
+    capacity_GW = sum(value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# differentiate USA, WECC and non-WECC for non-renewable capacities (as above for renewable capacities)
+AEO_elec_cap_non_RE <- AEO_elec_cap_non_RE %>%
+  mutate(region = "USA") %>%
+  select(scenario, region, technology, year, capacity_GW)
+
+AEO_elec_cap_non_RE_WECC_share <- AEO_elec_generation %>%
+  filter(region %in% c("USA", "WECC"),
+         technology %in% unique(AEO_elec_cap_non_RE$technology)) %>%
+  select(scenario, region, technology, year, generation_TWh) %>%
+  pivot_wider(names_from = region, values_from = generation_TWh) %>%
+  mutate(WECC_share = if_else(USA > 0, WECC / USA, 0)) %>%
+  select(scenario, technology, year, WECC_share)
+
+AEO_elec_cap_non_RE_WECC <- AEO_elec_cap_non_RE %>%
+  filter(region == "USA") %>%
+  left_join(AEO_elec_cap_non_RE_WECC_share,
+            by = c("scenario", "technology", "year")) %>%
+  mutate(
+    WECC_share = replace_na(WECC_share, 0),
+    capacity_GW = capacity_GW * WECC_share,
+    region = "WECC"
+  ) %>%
+  select(colnames(AEO_elec_cap_non_RE))
+
+AEO_elec_cap_non_RE_nonWECC <- AEO_elec_cap_non_RE %>%
+  filter(region == "USA") %>%
+  rename(capacity_GW_USA = capacity_GW) %>%
+  select(-region) %>%
+  left_join(
+    AEO_elec_cap_non_RE_WECC %>%
+      rename(capacity_GW_WECC = capacity_GW) %>%
+      select(-region),
+    by = c("scenario", "technology", "year")
+  ) %>%
+  mutate(
+    capacity_GW = capacity_GW_USA - capacity_GW_WECC,
+    region = "Non_WECC"
+  ) %>%
+  select(colnames(AEO_elec_cap_non_RE))
+
+AEO_elec_cap_non_RE <- bind_rows(
+  AEO_elec_cap_non_RE,
+  AEO_elec_cap_non_RE_WECC,
+  AEO_elec_cap_non_RE_nonWECC
+)
+
+# Combine AEO renewable and non-renewable capacities
+AEO_elec_cap <- AEO_elec_cap_non_RE %>%
+  bind_rows(AEO_elec_capacity)
+
+
+# Process GCAM capacity data
+elec_cap_GCAM_WECC_nonWECC <- elec_allvars_state_tech_vintage %>%
+  filter(
+    scenario == "GCAM_RefElecDemand",
+    year %in% ANALYSIS_YEARS,
+    region %in% REPORTING_STATES
+  ) %>%
+  mutate(
+    region = if_else(region %in% WECC_states, "WECC", "Non_WECC"),
+    technology = case_when(
+      grepl("offshore.*wind|wind.*offshore", technology, ignore.case = TRUE) ~ "Wind Offshore",
+      grepl("wind", technology, ignore.case = TRUE) ~ "Wind Onshore",
+      grepl("csp", technology, ignore.case = TRUE) ~ "Solar CSP",
+      grepl("solar|pv|rooftop", technology, ignore.case = TRUE) ~ "Solar PV",
+      grepl("gas", technology, ignore.case = TRUE) ~ "Gas",
+      grepl("coal", technology, ignore.case = TRUE) ~ "Coal",
+      grepl("refined liquids|oil", technology, ignore.case = TRUE) ~ "Refined Liquids",
+      grepl("hydro", technology, ignore.case = TRUE) ~ "Hydro",
+      grepl("nuclear", technology, ignore.case = TRUE) ~ "Nuclear",
+      grepl("biomass", technology, ignore.case = TRUE) ~ "Biomass",
+      grepl("geothermal", technology, ignore.case = TRUE) ~ "Geothermal",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  group_by(scenario, region, technology, year) %>%
+  summarise(
+    capacity_GW = sum(capacity_GW, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# aggregate WECC and non-WECC to USA level and attach 
+elec_cap_GCAM_USA <- elec_cap_GCAM_WECC_nonWECC %>%
+  mutate(region = "USA") %>%
+  group_by(scenario, region, technology, year) %>%
+  summarise(capacity_GW = sum(capacity_GW, na.rm = TRUE), .groups = "drop")
+
+elec_cap_GCAM <- bind_rows(elec_cap_GCAM_USA, elec_cap_GCAM_WECC_nonWECC)
+
+
+# Graph and save data
+elec_cap_AEO_GCAM_comp <- bind_rows(
+  elec_cap_GCAM,
+  AEO_elec_cap
+)
+
+write_stamp_csv(
+  elec_cap_AEO_GCAM_comp,
+  "elec_cap_tech_AEO_GCAM_comparison"
+)
+
+aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
+  
+  data_region <- data %>%
+    filter(region == region_of_interest)
+  
+  plot <- ggplot(
+    data_region,
+    aes(
+      fill = factor(
+        technology,
+        levels = c(
+          "Other",
+          "Wind Offshore",
+          "Wind Onshore",
+          "Solar PV",
+          "Solar CSP",
+          "Geothermal",
+          "Hydro",
+          "Biomass",
+          "Nuclear",
+          "Gas",
+          "Refined Liquids",
+          "Coal"
+        )
+      ),
+      x = scenario,
+      y = capacity_GW
+    )
+  ) +
+    geom_bar(position = "stack", stat = "identity", width = 0.75) +
+    facet_wrap(~year) +
+    theme_bw() +
+    coord_cartesian(ylim = c(0, 3000)) +
+    scale_y_continuous(breaks = seq(0, 3000, by = 500)) +
+    scale_fill_manual(
+      values = c(
+        '#666666', # Other
+        'skyblue', # Wind Offshore
+        'magenta', # Wind Onshore
+        'gray90',  # Solar PV
+        'red',     # Solar CSP
+        'yellow',  # Geothermal
+        '#009999', # Hydro
+        '#00CC66', # Biomass
+        'orange',  # Nuclear
+        'blue',    # Gas
+        'brown',   # Refined Liquids
+        '#000000'  # Coal
+      )
+    ) +
+    theme(legend.title = element_blank())
+  
+  ggsave(
+    paste0("figures/AEO_elec_cap_by_tech_comparison-", region_of_interest, ".png"),
+    plot = plot,
+    width = 10,
+    height = 5,
+    units = "in",
+    dpi = 300
+  )
+}
+
+aeo_elec_cap_comp_fun(
+  data = elec_cap_AEO_GCAM_comp,
+  region_of_interest = "USA"
+)
+
+aeo_elec_cap_comp_fun(
+  data = elec_cap_AEO_GCAM_comp,
+  region_of_interest = "WECC"
+)
+
+aeo_elec_cap_comp_fun(
+  data = elec_cap_AEO_GCAM_comp,
+  region_of_interest = "Non_WECC"
+)
+
+
 ###################################################################################################
 
 # Gas prices
