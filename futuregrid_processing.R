@@ -21,7 +21,7 @@ GCAM_COMMIT_HASH <- "cee704f" # Output filenames will be stamped with the commit
                               # The model commit hash needs to be specified manually here
 
 # Pick AEO version to compare
-AEO_VERSION <- "2025"   # Options: "2025" or "2026"
+AEO_VERSION <- "2026"   # Options: "2025" or "2026"
 
 if (!AEO_VERSION %in% c("2025", "2026")) {
   stop('AEO_VERSION must be "2025" or "2026"')
@@ -364,8 +364,7 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     left_join( AEO_elec_map, by = c( "sector", "type", "full name" ),
                relationship = "many-to-many" ) %>%
     filter( technology != "not_a_fuel_type" ) %>%
-    mutate( scenario = "AEO (2025) Ref" ) %>%
-    select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
+    mutate(scenario = AEO_scenario) %>%    select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
     gather_years() %>%
     # Summarize
     # Label as "TWh", as this is equivalent to the reported unit of billion kWh (BkWh)
@@ -399,7 +398,7 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     read_csv(file.path(AEO_folder, "AEO_Table_56-USA.csv"), skip = 4) %>% mutate(region = "USA")
     ) %>%
     inner_join( AEO_elec_map, by = c( "type", "full name" )) %>%
-    mutate( scenario = "AEO (2025) Ref" ) %>%
+    mutate(scenario = AEO_scenario) %>%
     select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
     gather_years() %>%
     # Summarize
@@ -509,8 +508,8 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
         geom_bar( position = "stack", stat = "identity", width = 0.75 ) +
         facet_wrap( ~year ) +
         theme_bw( ) +
-        coord_cartesian( ylim = c( -100, 7000 ) ) +
-        scale_y_continuous( breaks = seq( 0, 7000, by = 1000 ) ) +
+        coord_cartesian( ylim = c( -100, 8000 ) ) +
+        scale_y_continuous( breaks = seq( 0, 8000, by = 1000 ) ) +
         #  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
         scale_fill_manual( values = c( '#666666', # "Other"
                                        'skyblue', # "Wind Offshore"
@@ -977,12 +976,13 @@ AEO_henryhub <- read_csv(file.path(AEO_folder, "AEO_Table13.csv")) %>%
     read_csv(file.path(AEO_folder, "AEO_Table13_HighOGS.csv")),
     read_csv(file.path(AEO_folder, "AEO_Table13_LowOGS.csv"))
   ) %>%
-  filter(grepl("Henry Hub Spot Price", `full name`))  %>%
+  filter(grepl("Henry Hub Spot Price", `full name`)) %>%
   separate(`full name`, into = c("fuel", "variable", "scenario"), sep = ": ") %>%
   mutate(
-    scenario = if_else(
-      scenario == "Reference case", "Reference",
-      if_else(scenario == "High Oil and Gas Supply", "High Gas Supply", "Low Gas Supply")
+    scenario = case_when(
+      scenario %in% c("Reference case", "Counterfactual Baseline case") ~ "Reference",
+      scenario == "High Oil and Gas Supply" ~ "High Gas Supply",
+      TRUE ~ "Low Gas Supply"
     )
   ) %>%
   gather_years() %>%
@@ -991,17 +991,26 @@ AEO_henryhub <- read_csv(file.path(AEO_folder, "AEO_Table13.csv")) %>%
   distinct()
 
 HH_gasprice_comparison <- gas_prices_nation %>%
-  filter(scenario %in% c("GCAM_RefElecDemand", "GCAM_RefElecDemand_HighGasPrice", "GCAM_RefElecDemand_LowGasPrice")) %>%
+  filter(scenario %in% c(
+    "GCAM_RefElecDemand",
+    "GCAM_RefElecDemand_HighGasPrice",
+    "GCAM_RefElecDemand_LowGasPrice"
+  )) %>%
   mutate(
     model = "GCAM-USA",
     scenario = if_else(
       scenario == "GCAM_RefElecDemand", "Reference",
-      if_else(scenario == "GCAM_RefElecDemand_LowGasPrice", "High Gas Supply", "Low Gas Supply")
+      if_else(
+        scenario == "GCAM_RefElecDemand_LowGasPrice",
+        "High Gas Supply",
+        "Low Gas Supply"
+      )
     )
   ) %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
+
 
 ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scenario, linetype = model)) +
   geom_line() +
