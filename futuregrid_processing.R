@@ -344,19 +344,21 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
 
 ###################################################################################################
 
-# AEO 2025 electricity generation comparisons
+# AEO 2025 or 2026 electricity generation comparisons
 
   # AEO map
   AEO_elec_map <- read_csv( "mappings/AEO_elec_map.csv" )
 
   # Process AEO data
-  AEO_elec_generation <- bind_rows( read_csv( "data/AEO_2025/AEO_Table_54-WECC_B.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_R.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_NWPPA.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_CA_S.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_CA_N.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_SW.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_54-USA.csv", skip = 5 ) %>% mutate( region = "USA" ) ) %>%
+  AEO_elec_generation <- bind_rows(
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_B.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_R.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_NWPPA.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_CA_S.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_CA_N.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-WECC_SW.csv"), skip = 5) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_54-USA.csv"), skip = 5) %>% mutate(region = "USA")
+    ) %>%
     left_join( AEO_elec_map, by = c( "sector", "type", "full name" ),
                relationship = "many-to-many" ) %>%
     filter( technology != "not_a_fuel_type" ) %>%
@@ -385,13 +387,15 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
   AEO_elec_generation <- bind_rows( AEO_elec_generation, AEO_elec_generation_nonWECC )
 
 # Downscale Table 54's "Renewables" category to specific renewable technologies based on Table 56
-  AEO_renewable_generation <- bind_rows( read_csv( "data/AEO_2025/AEO_Table_56-WECC_B.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_R.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_NWPPA.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_CA_S.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_CA_N.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_SW.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_2025/AEO_Table_56-USA.csv", skip = 4 ) %>% mutate( region = "USA" ) ) %>%
+  AEO_renewable_generation <- bind_rows(
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_B.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_R.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_NWPPA.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_CA_S.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_CA_N.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_SW.csv"), skip = 4) %>% mutate(region = "WECC"),
+    read_csv(file.path(AEO_folder, "AEO_Table_56-USA.csv"), skip = 4) %>% mutate(region = "USA")
+    ) %>%
     inner_join( AEO_elec_map, by = c( "type", "full name" )) %>%
     mutate( scenario = "AEO (2025) Ref" ) %>%
     select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
@@ -457,14 +461,41 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     summarise(generation_TWh = sum(generation_TWh)) %>%
     ungroup()
   
-  elec_gen_fuel_AEO_comp <- bind_rows(elec_gen_fuel_AEO_comp_USA, elec_gen_fuel_AEO_comp_WECC)
+  # Non-WECC = USA minus WECC
+  elec_gen_fuel_AEO_comp_nonWECC <- elec_gen_fuel_AEO_comp_USA %>%
+    filter(region == "USA") %>%
+    rename(generation_TWh_USA = generation_TWh) %>%
+    select(-region) %>%
+    left_join(
+      elec_gen_fuel_AEO_comp_WECC %>%
+        filter(region == "WECC") %>%
+        rename(generation_TWh_WECC = generation_TWh) %>%
+        select(-region),
+      by = c("scenario", "technology", "year")
+    ) %>%
+    mutate(
+      generation_TWh = generation_TWh_USA - generation_TWh_WECC,
+      region = "Non_WECC"
+    ) %>%
+    select(colnames(elec_gen_fuel_AEO_comp_USA))
 
+    
+  # Combine all regions into one df:
+  elec_gen_fuel_AEO_comp <- bind_rows(
+    elec_gen_fuel_AEO_comp_USA,
+    elec_gen_fuel_AEO_comp_WECC %>% filter(region == "WECC"),
+    elec_gen_fuel_AEO_comp_nonWECC
+  )
+  
   # Graph and save data
   elec_gen_AEO_fuel_region_comparison_data <- bind_rows( elec_gen_fuel_AEO_comp,
                                                          AEO_elec_generation )
 
-  write_stamp_csv( elec_gen_AEO_fuel_region_comparison_data, "elec_gen_tech_AEO_comparison" )
-
+  write_stamp_csv(
+    elec_gen_AEO_fuel_region_comparison_data,
+    paste0("elec_gen_tech_AEO_", AEO_VERSION, "_comparison")
+  )
+  
   aeo_elec_comp_fun <- function( data, region_of_interest ){
 
       data_region <- data %>% filter( region == region_of_interest)
@@ -506,8 +537,19 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
                                       ) ) +
         theme( legend.title = element_blank( ) )
 
-      ggsave( paste0( "figures/AEO__elec_gen_by_tech_comparison-", region_of_interest, ".png" ),
-              width = 10, height = 5, units = "in", dpi = 300 )
+      ggsave(
+        paste0(
+          "figures/AEO_",
+          AEO_VERSION,
+          "_elec_gen_by_tech_comparison-",
+          region_of_interest,
+          ".png"
+        ),
+        width = 10,
+        height = 5,
+        units = "in",
+        dpi = 300
+      )
 
   }
 
