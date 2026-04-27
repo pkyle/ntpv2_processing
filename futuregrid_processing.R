@@ -21,7 +21,7 @@ GCAM_COMMIT_HASH <- "97147c" # Output filenames will be stamped with the commit 
                               # The model commit hash needs to be specified manually here
 
 # Pick AEO version to compare
-AEO_VERSION <- "2026"   # Options: "2025" or "2026"
+AEO_VERSION <- "2025"   # Options: "2025" or "2026"
 
 if (!AEO_VERSION %in% c("2025", "2026")) {
   stop('AEO_VERSION must be "2025" or "2026"')
@@ -942,16 +942,24 @@ write_stamp_csv(gas_prices_nation, "gas_prices_nation")
 ###################################################
 
 # Compare Henry Hub prices
-AEO_henryhub <- read_csv("data/AEO_2025/AEO_Table13.csv") %>%
-  bind_rows(read_csv("data/AEO_2025/AEO_Table13_HighOGS.csv"),
-            read_csv("data/AEO_2025/AEO_Table13_LowOGS.csv")) %>%
+AEO_henryhub <- read_csv(file.path(AEO_folder, "AEO_Table13.csv")) %>%
+  bind_rows(
+    read_csv(file.path(AEO_folder, "AEO_Table13_HighOGS.csv")),
+    read_csv(file.path(AEO_folder, "AEO_Table13_LowOGS.csv"))
+  ) %>%
   filter(grepl("Henry Hub Spot Price", `full name`))  %>%
   separate(`full name`, into = c("fuel", "variable", "scenario"), sep = ": ") %>%
-  mutate(scenario = if_else(scenario == "Reference case", "Reference",
-                            if_else(scenario == "High Oil and Gas Supply", "High Gas Supply", "Low Gas Supply"))) %>%
+  mutate(
+    scenario = if_else(
+      scenario == "Reference case", "Reference",
+      if_else(scenario == "High Oil and Gas Supply", "High Gas Supply", "Low Gas Supply")
+    )
+  ) %>%
   gather_years() %>%
-  mutate(model = "AEO2025") %>%
-  select(model, scenario, year, price_USDperMMBTU = value)
+  mutate(model = paste0("AEO", AEO_VERSION)) %>%
+  select(model, scenario, year, price_USDperMMBTU = value) %>%
+  distinct()
+
 HH_gasprice_comparison <- gas_prices_nation %>%
   filter(scenario %in% c("Reference", "NG_Conservative", "NG_Advanced")) %>%
   mutate(model = "GCAM-USA",
@@ -960,14 +968,22 @@ HH_gasprice_comparison <- gas_prices_nation %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
+
 ggplot(HH_gasprice_comparison, aes(x = year, y = price_USDperMMBTU, color = scenario, linetype = model)) +
   geom_line() +
   xlab("") +
   ylab("2024$ per mmbtu") +
   theme_bw() +
-  ylim(c(0,NA))
-ggsave("figures/gas_prices_HenryHub.png",
-       width = 5, height = 3.5, units = "in", dpi = 300)
+  ylim(c(0, NA))
+
+
+ggsave(
+  paste0("figures/AEO_", AEO_VERSION, "_gas_prices_HenryHub.png"),
+  width = 5,
+  height = 3.5,
+  units = "in",
+  dpi = 300
+)
 
 ###################################################################################################
 
