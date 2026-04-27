@@ -20,6 +20,17 @@ REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 GCAM_COMMIT_HASH <- "cee704f" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
+# Pick AEO version to compare
+AEO_VERSION <- "2026"   # Options: "2025" or "2026"
+
+if (!AEO_VERSION %in% c("2025", "2026")) {
+  stop('AEO_VERSION must be "2025" or "2026"')
+}
+
+AEO_folder   <- file.path("data", paste0("AEO_", AEO_VERSION))
+AEO_scenario <- paste0("AEO (", AEO_VERSION, ") Ref")
+
+
 ###################################################################################################
 ###################################################################################################
 
@@ -338,16 +349,16 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
 # AEO 2025 electricity generation comparisons
 
   # AEO map
-  AEO_elec_map <- read_csv( "mappings/AEO_2025_elec_gen_map.csv" )
+  AEO_elec_map <- read_csv( "mappings/AEO_elec_map.csv" )
 
   # Process AEO data
-  AEO_elec_generation <- bind_rows( read_csv( "data/AEO_Table_54-WECC_B.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-WECC_R.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-WECC_NWPPA.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-WECC_CA_S.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-WECC_CA_N.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-WECC_SW.csv", skip = 5 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_54-USA.csv", skip = 5 ) %>% mutate( region = "USA" ) ) %>%
+  AEO_elec_generation <- bind_rows( read_csv( "data/AEO_2025/AEO_Table_54-WECC_B.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_R.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_NWPPA.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_CA_S.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_CA_N.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-WECC_SW.csv", skip = 5 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_54-USA.csv", skip = 5 ) %>% mutate( region = "USA" ) ) %>%
     left_join( AEO_elec_map, by = c( "sector", "type", "full name" ),
                relationship = "many-to-many" ) %>%
     filter( technology != "not_a_fuel_type" ) %>%
@@ -376,13 +387,13 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
   AEO_elec_generation <- bind_rows( AEO_elec_generation, AEO_elec_generation_nonWECC )
 
 # Downscale Table 54's "Renewables" category to specific renewable technologies based on Table 56
-  AEO_renewable_generation <- bind_rows( read_csv( "data/AEO_Table_56-WECC_B.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-WECC_R.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-WECC_NWPPA.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-WECC_CA_S.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-WECC_CA_N.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-WECC_SW.csv", skip = 4 ) %>% mutate( region = "WECC" ),
-                                    read_csv( "data/AEO_Table_56-USA.csv", skip = 4 ) %>% mutate( region = "USA" ) ) %>%
+  AEO_renewable_generation <- bind_rows( read_csv( "data/AEO_2025/AEO_Table_56-WECC_B.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_R.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_NWPPA.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_CA_S.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_CA_N.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-WECC_SW.csv", skip = 4 ) %>% mutate( region = "WECC" ),
+                                    read_csv( "data/AEO_2025/AEO_Table_56-USA.csv", skip = 4 ) %>% mutate( region = "USA" ) ) %>%
     inner_join( AEO_elec_map, by = c( "type", "full name" )) %>%
     mutate( scenario = "AEO (2025) Ref" ) %>%
     select( scenario, region, technology, units, all_of( paste( seq( from = min( ANALYSIS_YEARS ), to = max( ANALYSIS_YEARS ), by = 5 ) ) ) ) %>%
@@ -637,25 +648,25 @@ elec_consumption_datacenters_state <- getQuery(gcam_output.proj, "inputs by tech
 write_stamp_csv(elec_consumption_datacenters_state, "elec_consumption_datacenters_state")
 
 
-# Compare GCAM and AEO 2025 electricity capacities --------------
+# Compare GCAM and AEO 2025 or 2026 electricity capacities --------------
 # Disclaimer: Some of the disparities in capacities are due to the imperfect technology mapping between GCAM and AEO, see the mapping file for details
 
 # First read in WECC and USA capacities from AEO Table 56, and map to GCAM technologies
 AEO_elec_capacity <- bind_rows(
-  read_csv("data/AEO_Table_56-WECC_B.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-WECC_R.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-WECC_NWPPA.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-WECC_CA_S.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-WECC_CA_N.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-WECC_SW.csv", skip = 4) %>% mutate(region = "WECC"),
-  read_csv("data/AEO_Table_56-USA.csv", skip = 4) %>% mutate(region = "USA")
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_B.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_R.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_NWPPA.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_CA_S.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_CA_N.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-WECC_SW.csv"), skip = 4) %>% mutate(region = "WECC"),
+  read_csv(file.path(AEO_folder, "AEO_Table_56-USA.csv"), skip = 4) %>% mutate(region = "USA")
 ) %>%
   filter(grepl("gigawatts|GW", units, ignore.case = TRUE)) %>%
   inner_join(
     AEO_elec_map,
     by = c("type", "full name")
   ) %>%
-  mutate(scenario = "AEO (2025) Ref") %>%
+  mutate(scenario = AEO_scenario) %>%
   select(
     scenario, region, technology, units,
     all_of(paste(seq(from = min(ANALYSIS_YEARS),
@@ -691,9 +702,12 @@ AEO_elec_capacity <- bind_rows(AEO_elec_capacity, AEO_elec_capacity_nonWECC)
 
 
 # Read in other (non-renewable) electricity capacities from AEO Table 9
-AEO_elec_cap_non_RE <- read_csv("data/AEO_Table_9.csv", skip = 4) %>%
+AEO_elec_cap_non_RE <- read_csv(
+  file.path(AEO_folder, "AEO_Table_9-USA.csv"),
+  skip = 4
+) %>%
   filter(`...1` != "Renewable Sources") %>%
-  mutate(scenario = "AEO (2025) Ref") %>%
+  mutate(scenario = paste0("AEO (", AEO_VERSION, ") Ref")) %>%
   left_join(AEO_elec_map, by = "full name") %>%
   filter(!is.na(technology), technology != "not_a_fuel_type") %>%
   select(
@@ -809,8 +823,9 @@ elec_cap_AEO_GCAM_comp <- bind_rows(
 
 write_stamp_csv(
   elec_cap_AEO_GCAM_comp,
-  "elec_cap_tech_AEO_GCAM_comparison"
+  paste0("elec_cap_tech_AEO_", AEO_VERSION, "_GCAM_comparison")
 )
+  
 
 aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
   
@@ -865,7 +880,7 @@ aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
     theme(legend.title = element_blank())
   
   ggsave(
-    paste0("figures/AEO_elec_cap_by_tech_comparison-", region_of_interest, ".png"),
+    paste0("figures/AEO_", AEO_VERSION, "_elec_cap_by_tech_comparison-", region_of_interest, ".png"),
     plot = plot,
     width = 10,
     height = 5,
@@ -915,9 +930,9 @@ write_stamp_csv(gas_prices_nation, "gas_prices_nation")
 ###################################################
 
 # Compare Henry Hub prices
-AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
-  bind_rows(read_csv("data/AEO_Table13_HighOGS.csv"),
-            read_csv("data/AEO_Table13_LowOGS.csv")) %>%
+AEO_henryhub <- read_csv("data/AEO_2025/AEO_Table13.csv") %>%
+  bind_rows(read_csv("data/AEO_2025/AEO_Table13_HighOGS.csv"),
+            read_csv("data/AEO_2025/AEO_Table13_LowOGS.csv")) %>%
   filter(grepl("Henry Hub Spot Price", `full name`))  %>%
   separate(`full name`, into = c("fuel", "variable", "scenario"), sep = ": ") %>%
   mutate(scenario = if_else(scenario == "Reference case", "Reference",
