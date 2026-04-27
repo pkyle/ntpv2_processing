@@ -67,3 +67,33 @@ Electric Power Sector,Solar Thermal,Renewable Energy: Electric Power Sector: Gen
 Electric Power Sector,Solar Photovoltaic,Renewable Energy: Electric Power Sector: Generating Capacity: Solar Photovoltaic: Reference case,Solar PV
 Electric Power Sector,Onshore Wind,Renewable Energy: Electric Power Sector: Generating Capacity: Onshore Wind: Reference case,Wind Onshore
 Electric Power Sector,Offshore Wind,Renewable Energy: Electric Power Sector: Generating Capacity: Offshore Wind: Reference case,Wind Offshore
+Electric Power Sector,Coal,Electricity: Electric Power Sector: Generation: Coal: Counterfactual Baseline case,Coal
+Electric Power Sector,Petroleum,Electricity: Electric Power Sector: Generation: Petroleum: Counterfactual Baseline case,Refined Liquids
+Electric Power Sector,Natural Gas,Electricity: Electric Power Sector: Generation: Natural Gas: Counterfactual Baseline case,Gas
+Electric Power Sector,Nuclear,Electricity: Electric Power Sector: Generation: Nuclear: Counterfactual Baseline case,Nuclear
+Electric Power Sector,Pumped Storage and Other,Electricity: Electric Power Sector: Generation: Pumped Storage/Other: Counterfactual Baseline case,Other
+Electric Power Sector,Hydrogen,Electricity: Electric Power Sector: Generation: Hydrogen: Counterfactual Baseline case,Other
+Electric Power Sector,Renewable Sources,Electricity: Electric Power Sector: Generation: Renewable Sources: Counterfactual Baseline case,Renewable
+Electric Power Sector,Total Generation,Electricity: Electric Power Sector: Generation: Total Generation: Counterfactual Baseline case,not_a_fuel_type
+Electric Power Sector,Sales to Customers,Electricity: Electric Power Sector: Generation: Sales to Customers: Counterfactual Baseline case,not_a_fuel_type
+Electric Power Sector,Generation for Own Use,Electricity: Electric Power Sector: Generation: Generation for Own Use: Counterfactual Baseline case,not_a_fuel_type
+End-Use Sectors,Coal,Electricity: End-Use Sectors: Generation: Coal: Counterfactual Baseline case,Coal
+End-Use Sectors,Petroleum,Electricity: End-Use Sectors: Generation: Petroleum: Counterfactual Baseline case,Refined Liquids
+End-Use Sectors,Natural Gas,Electricity: End-Use Sectors: Generation: Natural Gas: Counterfactual Baseline case,Gas
+End-Use Sectors,Other Gaseous Fuels,Electricity: End-Use Sectors: Generation: Other Gaseous Fuels: Counterfactual Baseline case,Gas
+End-Use Sectors,Renewable Sources,Electricity: End-Use Sectors: Generation: Renewable Sources: Counterfactual Baseline case,Renewable
+End-Use Sectors,Other,Electricity: End-Use Sectors: Generation: Other: Counterfactual Baseline case,Other
+End-Use Sectors,Total,Electricity: End-Use Sectors: Generation: Total: Counterfactual Baseline case,not_a_fuel_type
+End-Use Sectors,Sales to the Grid,Electricity: End-Use Sectors: Generation: Sales to the Grid: Counterfactual Baseline case,not_a_fuel_type
+End-Use Sectors,Generation for Own Use,Electricity: End-Use Sectors: Generation: Generation for Own Use: Counterfactual Baseline case,not_a_fuel_type
+Total Electricity Generation,Total Electricity Generation,Electricity: Total Electricity Generation: Counterfactual Baseline case,not_a_fuel_type
+,Solar Thermal,Renewable Energy: Electric Power Sector: Electricity Generation: Solar Thermal: Counterfactual Baseline case,Solar CSP
+,Solar Photovoltaic,Renewable Energy: Electric Power Sector: Electricity Generation: Solar Photovoltaic: Counterfactual Baseline case,Solar PV
+,Onshore Wind,Renewable Energy: Electric Power Sector: Electricity Generation: Onshore Wind: Counterfactual Baseline case,Wind Onshore
+,Offshore Wind,Renewable Energy: Electric Power Sector: Electricity Generation: Offshore Wind: Counterfactual Baseline case,Wind Offshore
+,Solar Photovoltaic,Renewable Energy: End-Use Sector: Electricity Generation: Solar Photovoltaic: Counterfactual Baseline case,Solar PV
+,Wind,Renewable Energy: End-Use Sector: Electricity Generation: Wind: Counterfactual Baseline case,Wind Onshore
+,Conventional Hydroelectric Power,Renewable Energy: All Sectors: Electricity Generation: Hydropower: Counterfactual Baseline case,Hydro
+,Geothermal,Renewable Energy: All Sectors: Electricity Generation: Geothermal: Counterfactual Baseline case,Geothermal
+,Municipal Waste,Renewable Energy: All Sectors: Electricity Generation: Municipal Waste: Counterfactual Baseline case,Biomass
+,Wood and Other Biomass,Renewable Energy: All Sectors: Electricity Generation: Wood and Other Biomass: Counterfactual Baseline case,Biomass
