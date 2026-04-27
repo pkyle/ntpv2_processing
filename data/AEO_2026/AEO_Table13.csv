@@ -1,0 +1,28 @@
+full name,api key,units,2025,2030,2035,2040,2045,2050
+Natural Gas: Production: Dry Gas Production: Counterfactual Baseline case,AEO.2026.CB2026.SUP_PRD_NA_NA_NG_DNG_USA_TRLCF.A,Tcf,39.151508,41.389923,44.934116,47.059158,50.329487,52.831539
+Natural Gas: Production: Supplemental Natural Gas: Counterfactual Baseline case,AEO.2026.CB2026.SUP_PRD_NA_NA_NG_SPNG_USA_TRLCF.A,Tcf,0.1223,0.085238,0.075964,0.075964,0.075964,0.075964
+Natural Gas: Production: Renewable Natural Gas: Counterfactual Baseline case,AEO.2026.CB2026.SUP_PRD_NA_NA_NG_RNG_USA_TRLCF.A,Tcf,0.097315,0.112869,0.112869,0.12022,0.12022,0.12022
+Natural Gas: Net Imports: Counterfactual Baseline case,AEO.2026.CB2026.TRAD_NETIMP_NA_NA_NG_NA_USA_TRLCF.A,Tcf,-5.714208,-9.203096,-11.660858,-12.05608,-12.774993,-13.088426
+Natural Gas: Net Imports: Pipeline: Counterfactual Baseline case,AEO.2026.CB2026.TRAD_NETIMP_NA_NA_NG_PIPL_USA_TRLCF.A,Tcf,-0.298479,-0.860313,-1.862023,-1.982263,-2.07882,-1.892254
+Natural Gas: Net Imports: Liquefied Natural Gas: Counterfactual Baseline case,AEO.2026.CB2026.TRAD_NETIMP_NA_NA_NG_LNG_USA_TRLCF.A,Tcf,-5.41573,-8.342784,-9.798836,-10.073817,-10.696173,-11.196173
+Natural Gas: Total Supply: Counterfactual Baseline case,AEO.2026.CB2026.SUP_NA_TOT_NA_NG_NA_USA_TRLCF.A,Tcf,33.559601,32.272064,33.349224,35.079044,37.630459,39.81908
+Natural Gas: Use by Sector: Total: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_ALLS_NA_NG_TOT_USA_TRLCF.A,Tcf,33.125484,31.906647,32.993744,34.766991,37.283657,39.42519
+Natural Gas: Use by Sector: Residential: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_RESD_NA_NG_NA_USA_TRLCF.A,Tcf,4.745742,4.613936,4.395323,4.240478,4.084517,3.944739
+Natural Gas: Use by Sector: Commercial: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_COMM_NA_NG_NA_USA_TRLCF.A,Tcf,3.506555,3.34458,3.25491,3.256676,3.249898,3.237516
+Natural Gas: Use by Sector: Industrial: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_IDAL_NA_NG_NA_USA_TRLCF.A,Tcf,10.677654,10.464989,11.197308,11.751451,12.319292,12.975817
+Natural Gas: Use by Sector: Industrial: Other: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_IDAL_OTH_NG_NA_USA_TRLCF.A,Tcf,7.773948,7.546607,7.672305,7.909266,8.251701,8.700308
+Natural Gas: Use by Sector: Industrial: Lease and Plant Fuel: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_LAP_NA_NG_LSAPFL_USA_TRLCF.A,Tcf,2.062022,2.164475,2.392933,2.487273,2.57317,2.65048
+Natural Gas: Use by Sector: Industrial: Hydrogen: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_IDAL_FSK_NG_FT_USA_TRLCF.A,Tcf,0.841684,0.753907,1.132069,1.354912,1.494421,1.625029
+Natural Gas: Use by Sector: Transportation: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_TRN_NA_NG_NA_USA_TRLCF.A,Tcf,1.364933,1.68591,1.87566,2.014953,2.219195,2.418966
+Natural Gas: Use by Sector: Transportation: Vehicles: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_MVF_NA_NG_NA_USA_TRLCF.A,Tcf,0.085445,0.101574,0.102444,0.124435,0.176618,0.268821
+Natural Gas: Use by Sector: Transportation: Pipeline Fuel: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_PIPL_NA_NG_PFT_USA_TRLCF.A,Tcf,0.709305,0.70493,0.740784,0.829188,0.915839,0.970859
+Natural Gas: Use by Sector: Transportation: Liquefaction for Export: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_LQFCT_NA_NG_LQFCT_USA_TRLCF.A,Tcf,0.570184,0.879405,1.032431,1.06133,1.126738,1.179286
+Natural Gas: Use by Sector: Electric Power: Counterfactual Baseline case,AEO.2026.CB2026.CNSM_NA_ELEP_NA_NG_NA_USA_TRLCF.A,Tcf,12.830601,11.797235,12.270543,13.50343,15.410755,16.84815
+Natural Gas: Discrepancy: Counterfactual Baseline case,AEO.2026.CB2026.UNC_DESCR_NA_NA_NG_NA_USA_TRLCF.A,Tcf,0.434116,0.365417,0.35548,0.312054,0.346802,0.39389
+Natural Gas: Henry Hub Spot Price: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_HHP_NA_NA_NG_NA_USA_Y13DLRPMMBTU.A,2025 $/MMBtu,3.467205,4.476052,5.049441,5.35787,4.996877,4.636305
+Natural Gas: Delivered Prices: Residential: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_RESD_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,15.229764,14.546659,15.613507,15.674245,15.856476,16.020563
+Natural Gas: Delivered Prices: Commercial: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_COMM_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,10.747469,11.715389,12.953498,13.111724,13.204735,13.248101
+Natural Gas: Delivered Prices: Industrial: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_IDAL_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,4.679918,5.619786,6.05053,6.237661,5.90161,5.609644
+Natural Gas: Delivered Prices: Transportation: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_TRN_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,17.819967,18.659134,19.081615,17.617455,16.544249,15.78087
+Natural Gas: Delivered Prices: Electric Power: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_ELEP_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,3.933857,4.833482,5.145964,5.388458,5.083292,4.787071
+Natural Gas: Delivered Prices: Average: Counterfactual Baseline case,AEO.2026.CB2026.PRCE_NA_NA_NA_NG_NA_USA_Y13DLRPMCF.A,2025 $/Mcf,6.79258,7.524865,7.950263,7.962055,7.546935,7.191684
