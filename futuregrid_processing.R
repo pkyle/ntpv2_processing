@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "cee704f" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "6dd666" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 ###################################################################################################
@@ -91,16 +91,14 @@ gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
 
 if(REQUERY_DATA){
-  scenarios <- c("GCAM_RefElecDemand", "GCAM_HighElecDemand", "GCAM_LowElecDemand", "GCAM_RefElecDemand_HighGasPrice", "GCAM_RefElecDemand_LowGasPrice")
+  scenarios <- c("Reference", "HighElecDemand", "LowElecDemand", "NG_Conservative",
+                 "NG_Advanced", "VRE_Conservative", "VRE_Advanced", "Nuclear_Advanced")
 
   for(i in scenarios){
     conn <- localDBConn( gcam_database_directory, "database_basexdb")
     gcam_output.proj <- addScenario(conn, gcam_output.proj, i, "rgcam/BatchQueries_futuregrid.xml", clobber = TRUE)
   }
 }
-
-# List available queries:
-listQueries(gcam_output.proj, 'GCAM_RefElecDemand')
 
 ###################################################################################################
 ###################################################################################################
@@ -152,7 +150,7 @@ ref_elec_GCAM <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(grepl("elect_td", input),
          year %in% ANALYSIS_YEARS,
          !region %in% EXCLUDED_STATES,
-         scenario == "GCAM_RefElecDemand") %>%
+         scenario == "Reference") %>%
   group_by(region, year) %>%
   summarise(elec_GCAM = sum(value) * TWH_PER_EJ) %>%
   ungroup()
@@ -194,7 +192,7 @@ elec_cons_sector_map <- read_csv("mappings/elec_cons_sector_map.csv")
 
 ref_elec_cons_sector_gcam <- getQuery(gcam_output.proj, "inputs by tech") %>%
   filter(grepl("elect_td", input),
-         scenario %in% c("GCAM_RefElecDemand"),
+         scenario %in% c("Reference"),
          !region %in% EXCLUDED_STATES,
          year %in% ANALYSIS_YEARS) %>%
   inner_join(elec_cons_sector_map, by = 'sector') %>%
@@ -275,7 +273,7 @@ WECC_fractions <- read_csv( "data/GridPath_WECC_elec_gen_fraction-26_04_06.csv" 
           WECC_fraction = "Fraction of State in WECC" )
 
 elec_gen_fuel_WECC <- elec_gen_fuel_state %>%
-  filter(scenario == "GCAM_RefElecDemand",
+  filter(scenario == "Reference",
          region %in% WECC_states) %>%
   # Apply fractions from GridPath
   left_join_error_no_match( WECC_fractions, by = c( "region" ) ) %>%
@@ -411,21 +409,33 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     bind_rows(AEO_renewable_generation) %>%
     arrange(scenario, region, technology, year)
   
+  # Make data table to expand state-level data to WECC and non-WECC
+  WECC_and_nonWECC_fractions <- data.frame(region = REPORTING_STATES) %>%
+    left_join(WECC_fractions, by = "region") %>%
+    replace_na(list(WECC_fraction = 0)) %>%
+    rename(WECC = WECC_fraction) %>%
+    mutate(Non_WECC = 1 - WECC) %>%
+    gather(key = "region_group", value = "fraction", -region)
+    
+  
   # Process GCAM data - re-aggregate from model queries in order to differentiate solar and wind categories
   elec_gen_fuel_AEO_comp_WECC <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
     bind_rows(getQuery(gcam_output.proj, "outputs by tech")) %>%
-    filter(scenario == "GCAM_RefElecDemand",
+    filter(scenario == "Reference",
            grepl("generation", sector) | technology == "rooftop_pv" | (grepl("cogen", technology) & output == "electricity"),
            technology != "hydrogen cogen",
            year %in% ANALYSIS_YEARS,
            region %in% REPORTING_STATES) %>%
-    mutate(region = if_else(region %in% WECC_states, "WECC", "non-Non_WECC"),
+    left_join(WECC_and_nonWECC_fractions, by = "region", relationship = "many-to-many") %>%
+    mutate(region = region_group,
+           value = value * fraction,
            subsector = if_else(is.na(subsector), subsector...5, subsector),
            subsector = if_else(grepl("offshore", technology), "Wind Offshore", subsector),
            subsector = if_else(grepl("wind", technology) & !grepl("offshore", technology), "Wind Onshore", subsector),
            subsector = if_else(grepl("CSP", technology), "Solar CSP", subsector),
            subsector = if_else(grepl("PV", technology, ignore.case = TRUE), "Solar PV", subsector),
            technology = tools::toTitleCase(subsector)) %>%
+    # Apply fractions from GridPath
     group_by(scenario, region, technology, year) %>%
     summarise(generation_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
     ungroup()
@@ -765,12 +775,14 @@ AEO_elec_cap <- AEO_elec_cap_non_RE %>%
 # Process GCAM capacity data
 elec_cap_GCAM_WECC_nonWECC <- elec_allvars_state_tech_vintage %>%
   filter(
-    scenario == "GCAM_RefElecDemand",
+    scenario == "Reference",
     year %in% ANALYSIS_YEARS,
     region %in% REPORTING_STATES
   ) %>%
+  left_join(WECC_and_nonWECC_fractions, by = "region", relationship = "many-to-many") %>%
   mutate(
-    region = if_else(region %in% WECC_states, "WECC", "Non_WECC"),
+    region = region_group,,
+    capacity_GW = capacity_GW * fraction,
     technology = case_when(
       grepl("offshore.*wind|wind.*offshore", technology, ignore.case = TRUE) ~ "Wind Offshore",
       grepl("wind", technology, ignore.case = TRUE) ~ "Wind Onshore",
@@ -926,10 +938,10 @@ AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
   mutate(model = "AEO2025") %>%
   select(model, scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
-  filter(scenario %in% c("GCAM_RefElecDemand", "GCAM_RefElecDemand_HighGasPrice", "GCAM_RefElecDemand_LowGasPrice")) %>%
+  filter(scenario %in% c("Reference", "Reference_HighGasPrice", "Reference_LowGasPrice")) %>%
   mutate(model = "GCAM-USA",
-         scenario = if_else(scenario == "GCAM_RefElecDemand", "Reference",
-                            if_else(scenario == "GCAM_RefElecDemand_LowGasPrice", "High Gas Supply", "Low Gas Supply"))) %>%
+         scenario = if_else(scenario == "Reference", "Reference",
+                            if_else(scenario == "Reference_LowGasPrice", "High Gas Supply", "Low Gas Supply"))) %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
