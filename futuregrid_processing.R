@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "6dd666" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "97147c" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 ###################################################################################################
@@ -477,8 +477,8 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
         geom_bar( position = "stack", stat = "identity", width = 0.75 ) +
         facet_wrap( ~year ) +
         theme_bw( ) +
-        coord_cartesian( ylim = c( -100, 7000 ) ) +
-        scale_y_continuous( breaks = seq( 0, 7000, by = 1000 ) ) +
+        #coord_cartesian( ylim = c( -100, 7000 ) ) +
+        #scale_y_continuous( breaks = seq( 0, 7000, by = 1000 ) ) +
         #  http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
         scale_fill_manual( values = c( '#666666', # "Other"
                                        'skyblue', # "Wind Offshore"
@@ -856,8 +856,8 @@ aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
     geom_bar(position = "stack", stat = "identity", width = 0.75) +
     facet_wrap(~year) +
     theme_bw() +
-    coord_cartesian(ylim = c(0, 3000)) +
-    scale_y_continuous(breaks = seq(0, 3000, by = 500)) +
+    #coord_cartesian(ylim = c(0, 3000)) +
+    #scale_y_continuous(breaks = seq(0, 3000, by = 500)) +
     scale_fill_manual(
       values = c(
         '#666666', # Other
@@ -938,10 +938,10 @@ AEO_henryhub <- read_csv("data/AEO_Table13.csv") %>%
   mutate(model = "AEO2025") %>%
   select(model, scenario, year, price_USDperMMBTU = value)
 HH_gasprice_comparison <- gas_prices_nation %>%
-  filter(scenario %in% c("Reference", "Reference_HighGasPrice", "Reference_LowGasPrice")) %>%
+  filter(scenario %in% c("Reference", "NG_Conservative", "NG_Advanced")) %>%
   mutate(model = "GCAM-USA",
          scenario = if_else(scenario == "Reference", "Reference",
-                            if_else(scenario == "Reference_LowGasPrice", "High Gas Supply", "Low Gas Supply"))) %>%
+                            if_else(scenario == "NG_Advanced", "High Gas Supply", "Low Gas Supply"))) %>%
   filter(rate_class == "Henry Hub") %>%
   select(model, scenario, year, price_USDperMMBTU) %>%
   bind_rows(AEO_henryhub)
