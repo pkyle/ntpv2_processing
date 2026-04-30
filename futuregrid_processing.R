@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "97147c" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "665540" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 # Pick AEO version to compare
