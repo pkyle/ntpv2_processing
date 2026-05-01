@@ -1,0 +1,44 @@
+technology,resource_type
+PV,Solar
+solar,Solar
+biomass (cooling pond),Other
+biomass (dry cooling),Other
+biomass (once through),Other
+biomass (recirculating),Other
+biomass (seawater),Other
+biomass,Other
+coal (cooling pond),Coal
+coal (dry cooling),Coal
+coal (once through),Coal
+coal (recirculating),Coal
+coal (seawater),Coal
+coal,Coal
+CSP (dry_hybrid),Solar
+CSP (recirculating),Solar
+gas (CC) (cooling pond),NG
+gas (CC) (dry cooling),NG
+gas (CC) (once through),NG
+gas (CC) (recirculating),NG
+gas (CC) (seawater),NG
+gas (steam/CT) (cooling pond),NG
+gas (steam/CT) (dry cooling),NG
+gas (steam/CT) (once through),NG
+gas (steam/CT) (recirculating),NG
+gas (steam/CT) (seawater),NG
+gas,NG
+geothermal (recirculating),Other
+hydro,Hydro
+nuclear (cooling pond),Nuclear
+nuclear (once through),Nuclear
+nuclear (recirculating),Nuclear
+nuclear (seawater),Nuclear
+nuclear,Nuclear
+refined liquids (cooling pond),Petroleum
+refined liquids (dry cooling),Petroleum
+refined liquids (once through),Petroleum
+refined liquids (recirculating),Petroleum
+refined liquids (seawater),Petroleum
+refined liquids,Petroleum
+rooftop_pv,Solar
+wind,Wind
+wind_offshore,Wind
