@@ -1,0 +1,25 @@
+sector,Sector
+ammonia,Industry
+base load generation,Electricity
+biomass liquids,Industry
+comm cooking,Commercial
+comm cooling,Commercial
+comm heating,Commercial
+comm hot water,Commercial
+comm others,Commercial
+H2 LDV,Industry
+H2 MHDV,Industry
+intermediate generation,Electricity
+LH2,Industry
+oil refining,Industry
+other industrial energy use,Industry
+other industrial feedstocks,Industry
+peak generation,Electricity
+process heat cement,Industry
+resid clothes dryers,Residential
+resid cooking,Residential
+resid heating,Residential
+resid hot water,Residential
+resid others,Residential
+subpeak generation,Electricity
+trn_pass_road,Transportation

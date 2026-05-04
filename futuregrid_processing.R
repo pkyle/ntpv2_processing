@@ -1326,8 +1326,6 @@ ggsave( "figures/gas_pipeline_imports_by_state.png",
         plot = plot_import,
         width = 5, height = 3.5, units = "in", dpi = 300 )
 
-
-
 ###################################################
 
 # Intercomparison template
@@ -1398,3 +1396,225 @@ gas_tab<- fuelprices %>%
          gas_price=fuelprice_USDperMMbtu)
 
 write_stamp_csv(gas_tab,"comp_template_gas_tab")
+
+## Figures for powerpoint presentation
+# Slide 11: All scenarios consumption of total electricity, total gas and gas to the power sector
+slide11_totalelec <- elec_consumption_nation %>%
+  rename(value = consumption_TWh) %>%
+  mutate(unit = "TWh",
+         Variable = "Electricity Consumption (TWh)")
+slide11_totalgas <- gather_years(gas_consumption_sector_state) %>%
+  group_by(scenario, year, unit) %>%
+  summarise(value = sum(value)) %>%
+  ungroup() %>%
+  mutate(Variable = "Total Gas Consumption (Tbtu)")
+slide11_gastoelec <- gather_years(gas_consumption_sector_state) %>%
+  filter(grepl("generation", sector)) %>%
+  group_by(scenario, year, unit) %>%
+  summarise(value = sum(value)) %>%
+  ungroup() %>%
+  mutate(Variable = "Power Sector Gas Consumption (Tbtu)")
+slide11data <- bind_rows(slide11_totalelec, slide11_totalgas, slide11_gastoelec) %>%
+  mutate(scenario = factor(scenario, levels = c("Reference", "NG_Advanced", "NG_Conservative",
+                                                "HighElecDemand", "LowElecDemand", "VRE_Advanced",
+                                                "VRE_Conservative", "Nuclear_Advanced")),
+         Variable = factor(Variable, levels = c("Electricity Consumption (TWh)", "Total Gas Consumption (Tbtu)", "Power Sector Gas Consumption (Tbtu)")))
+
+scenario_colors <- c(Reference = "black",
+                     NG_Advanced = "blue",
+                     NG_Conservative = "seagreen",
+                     HighElecDemand = "orange",
+                     LowElecDemand = "purple",
+                     VRE_Advanced = "skyblue",
+                     VRE_Conservative = "brown",
+                     Nuclear_Advanced = "yellow")
+ggplot(slide11data, aes(x = year, y = value, color = scenario)) +
+  geom_line() +
+  facet_wrap(~Variable, scales = "free_y") +
+  ylim(c(0,NA)) +
+  ylab("") +
+  xlab("") +
+  scale_color_manual(values = scenario_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+  
+ggsave(filename = "figures/slide11.png", height = 5, width = 10, units = "in")
+
+# Slide12: refererence scenario outputs
+# 12a: electricity generation by technology
+slide12a_data <- elec_gen_fuel_nation %>%
+  filter(scenario == "Reference") %>%
+  mutate(technology = if_else(technology == "Rooftop_pv", "Solar", technology)) %>%
+  group_by(scenario, technology, year) %>%
+  summarise(generation_TWh = sum(generation_TWh)) %>%
+  ungroup() %>%
+  mutate(technology = factor(technology, levels = rev(c("Coal", "Gas", "Refined Liquids",
+                                                    "Biomass", "Nuclear", "Hydro",
+                                                    "Geothermal", "Wind", "Solar"))))
+
+elec_colors <- c(Coal = "black",
+                 Gas = "blue",
+                 `Refined Liquids` = "brown",
+                 Biomass = "seagreen",
+                 Nuclear = "orange",
+                 Hydro = "skyblue4",
+                 Geothermal = "red",
+                 Wind = "skyblue",
+                 Solar = "yellow")
+slide12a <- ggplot(slide12a_data, aes(x = year, y = generation_TWh, fill = technology)) +
+  geom_bar(stat = "identity", position = "stack") +
+  ylab("TWh") +
+  xlab("") +
+  ggtitle("Electricity Generation") +
+  scale_fill_manual( values = elec_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+
+ggsave(filename = "figures/slide12a.png", height = 4, width = 4, units = "in")
+
+# 12b: NG demand by sector (including exports)
+gas_cons_sector_map <- read_csv("mappings/gas_cons_sector_map.csv")
+
+fig12b_data_demand <- filter(gas_consumption_sector_state, scenario == "Reference") %>%
+  gather_years() %>%
+  left_join(gas_cons_sector_map, by = "sector") %>%
+  group_by(scenario, Sector, year) %>%
+  summarise(value = sum(value)) %>%
+  ungroup()
+
+fig12b_data_exports <- gas_trade_nation %>%
+  filter(scenario == "Reference",
+         From.Country == "USA",
+         year %in% ANALYSIS_YEARS) %>%
+  mutate(Sector = paste(Commodity, "exports")) %>%
+  group_by(scenario, Sector, year) %>%
+  summarise(value = sum(Flow_Tbtu)) %>%
+  ungroup()
+
+fig12b_data <- bind_rows(fig12b_data_demand, fig12b_data_exports) %>%
+  mutate(Sector = factor(Sector, levels = rev(c("Electricity", "Industry", "Commercial",
+                                            "Residential", "Transportation",
+                                            "LNG exports", "Pipeline gas exports"))))
+
+gas_sector_colors <- c(Electricity = "yellow",
+                       Industry = "gray60",
+                       Commercial = "seagreen",
+                       Residential = "red4",
+                       Transportation = "purple",
+                       `LNG exports` = "blue",
+                       `Pipeline gas exports` = "orange")
+
+slide12b <- ggplot(fig12b_data, aes(x = year, y = value, fill = Sector)) +
+  geom_bar(stat = "identity", position = "stack") +
+  ylab("Tbtu") +
+  xlab("") +
+  ggtitle("Gas Consumption") +
+  scale_fill_manual( values = gas_sector_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+ggsave(filename = "figures/slide12b.png", height = 4, width = 4, units = "in")
+
+
+# 12c: Change in NG consumption by state (top changes)
+fig12c_data <- filter(gas_consumption_sector_state, scenario == "Reference") %>%
+  mutate(change = `2050` - `2025`) %>%
+  group_by(scenario, region) %>%
+  summarise(change = sum(change)) %>%
+  ungroup() %>%
+  arrange(change) %>%
+  filter(abs(change) > 100) %>%
+  mutate(region = factor(region, levels = region))
+
+ggplot(fig12c_data, aes(x = change, y = region)) +
+  geom_bar(stat = "identity", fill = "black") +
+  theme_bw() +
+  xlab("Tbtu/yr") +
+  ylab("") +
+  ggtitle("2025-2050 Gas\nConsumption Change\nby State")
+ggsave(filename = "figures/slide12c.png", height = 4, width = 3, units = "in")
+
+# slide 13 - NG_Advanced versus reference
+slide13a_data <- elec_gen_fuel_nation %>%
+  filter(scenario %in% c("Reference", "NG_Advanced")) %>%
+  mutate(technology = if_else(technology == "Rooftop_pv", "Solar", technology)) %>%
+  group_by(scenario, technology, year) %>%
+  summarise(generation_TWh = sum(generation_TWh)) %>%
+  ungroup() %>%
+  spread(key = scenario, value = generation_TWh) %>%
+  mutate(diff_TWh = NG_Advanced - Reference,
+         technology = factor(technology, levels = rev(c("Coal", "Gas", "Refined Liquids",
+                                                        "Biomass", "Nuclear", "Hydro",
+                                                        "Geothermal", "Wind", "Solar"))))
+
+slide13a <- ggplot(slide13a_data, aes(x = year, y = diff_TWh, fill = technology)) +
+  geom_bar(stat = "identity", position = "stack") +
+  ylab("TWh") +
+  xlab("") +
+  ggtitle("Electricity Generation Change") +
+  scale_fill_manual( values = elec_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+
+ggsave(filename = "figures/slide13a.png", height = 4, width = 4, units = "in")
+
+# 13b - diff from ref to adv, using same data as 12b
+# Don't include trade as it was upstream of regional cost adders used here
+fig13b_data_demand <- filter(gas_consumption_sector_state, scenario %in% c("Reference", "NG_Advanced")) %>%
+  gather_years() %>%
+  left_join(gas_cons_sector_map, by = "sector") %>%
+  group_by(scenario, Sector, year) %>%
+  summarise(value = sum(value)) %>%
+  ungroup() %>%
+  spread(key = scenario, value = value) %>%
+  mutate(diff_Tbtu = NG_Advanced - Reference,
+         Sector = factor(Sector, levels = rev(c("Electricity", "Industry", "Commercial",
+                                                "Residential", "Transportation",
+                                                "LNG exports", "Pipeline gas exports"))))
+slide13b <- ggplot(fig13b_data_demand, aes(x = year, y = diff_Tbtu, fill = Sector)) +
+  geom_bar(stat = "identity", position = "stack") +
+  ylab("Tbtu") +
+  xlab("") +
+  ggtitle("Change in Domestic Gas Consumption") +
+  scale_fill_manual( values = gas_sector_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+ggsave(filename = "figures/slide13b.png", height = 4, width = 4, units = "in")
+
+# 13c: Change in NG consumption by state (top changes)
+# Just filter the top quantile (80th percentile and up)
+fig13c_data <- filter(gas_consumption_sector_state, scenario %in% c("Reference", "NG_Advanced")) %>%
+  mutate(change = `2050` - `2025`) %>%
+  group_by(scenario, region) %>%
+  summarise(change = sum(change)) %>%
+  ungroup() %>%
+  spread(key = scenario, value = change) %>%
+  mutate(diff_Tbtu = NG_Advanced - Reference) %>%
+  arrange(diff_Tbtu) %>%
+  filter(abs(diff_Tbtu) > quantile(abs(diff_Tbtu),0.8)) %>%
+  mutate(region = factor(region, levels = region))
+
+ggplot(fig13c_data, aes(x = diff_Tbtu, y = region)) +
+  geom_bar(stat = "identity", fill = "black") +
+  theme_bw() +
+  xlab("Tbtu/yr") +
+  ylab("") +
+  ggtitle("Change in 2050 Gas\nConsumption by State")
+ggsave(filename = "figures/slide13c.png", height = 4, width = 3, units = "in")
+
+# slide 14 - just the power sector slide
+slide14_data <- elec_gen_fuel_nation %>%
+  filter(scenario %in% c("Reference", "NG_Conservative")) %>%
+  mutate(technology = if_else(technology == "Rooftop_pv", "Solar", technology)) %>%
+  group_by(scenario, technology, year) %>%
+  summarise(generation_TWh = sum(generation_TWh)) %>%
+  ungroup() %>%
+  spread(key = scenario, value = generation_TWh) %>%
+  mutate(diff_TWh = NG_Conservative - Reference,
+         technology = factor(technology, levels = rev(c("Coal", "Gas", "Refined Liquids",
+                                                        "Biomass", "Nuclear", "Hydro",
+                                                        "Geothermal", "Wind", "Solar"))))
+
+slide14 <- ggplot(slide14_data, aes(x = year, y = diff_TWh, fill = technology)) +
+  geom_bar(stat = "identity", position = "stack") +
+  ylab("TWh") +
+  xlab("") +
+  ggtitle("Electricity Generation Change") +
+  scale_fill_manual( values = elec_colors, guide = guide_legend(title = NULL)) +
+  theme_bw()
+
+ggsave(filename = "figures/slide14.png", height = 4, width = 4, units = "in")
