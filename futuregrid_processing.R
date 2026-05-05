@@ -1333,30 +1333,33 @@ ggsave( "figures/gas_pipeline_imports_by_state.png",
 #resource tab
 
 resource_comp<-elec_allvars_state_tech_vintage %>%
-  left_join(scenario_mapping, by = join_by(scenario)) %>% 
-  left_join(resource_mapping, by = join_by(technology))
+  left_join_error_no_match(scenario_mapping, by = join_by(scenario)) %>% 
+  left_join_error_no_match(resource_mapping, by = join_by(technology))
 
-resource_comp_gen_cap<- resource_comp %>% group_by(scenario.comp,year,region,resource_type) %>% 
-  summarize(generation=sum(gen_TWh),
-            installed_capacity_total=sum(capacity_GW))%>% 
-  mutate(generation= generation*MW_PER_TW,
-         installed_capacity_total=installed_capacity_total*MW_PER_GW)
+resource_comp_gen_cap<- resource_comp %>%
+  group_by(scenario.comp, year, region, resource_type) %>% 
+  summarize(generation = sum(gen_TWh),
+            installed_capacity_total = sum(capacity_GW), .groups = "drop") %>% 
+  mutate(generation = generation * MW_PER_TW,
+         installed_capacity_total = installed_capacity_total * MW_PER_GW)
 
 resource_comp_new_cap<-resource_comp %>% 
   filter(vintage==year) %>% 
-  group_by(scenario.comp,year,region,resource_type) %>% 
-  summarize(installed_capacity_new=sum(capacity_GW)) %>% 
+  group_by(scenario.comp, year, region, resource_type) %>% 
+  summarize(installed_capacity_new=sum(capacity_GW), .groups = "drop") %>% 
   mutate(installed_capacity_new= installed_capacity_new*MW_PER_GW/5) 
 
-resource_comp_retirements<-resource_comp%>% group_by(scenario.comp,year, vintage, region, technology) %>% 
-  summarize(capacity_GW=sum(capacity_GW)) %>%
+resource_comp_retirements<-resource_comp %>%
+  group_by(scenario.comp, year, vintage, region, technology) %>% 
+  summarize(capacity_GW=sum(capacity_GW), .groups = "drop") %>%
   arrange(scenario.comp, region, technology, vintage, year) %>%
   group_by(scenario.comp, region, technology, vintage) %>%
   mutate(capacity_prev = lag(capacity_GW, n = 1, order_by = year),# Previous period capacity within same vintage/region/resource group
          retired_capacity = pmax(0, capacity_prev - capacity_GW, na.rm = FALSE))  %>% 
+  ungroup() %>%
   left_join(resource_mapping, by = join_by(technology)) %>% 
-  group_by(scenario.comp,year,region,resource_type) %>% 
-  summarize(retired_capacity=sum(retired_capacity, na.rm = TRUE)) %>% 
+  group_by(scenario.comp, year, region, resource_type) %>% 
+  summarize(retired_capacity=sum(retired_capacity, na.rm = TRUE), .groups = "drop") %>% 
   mutate(retired_capacity= retired_capacity*MW_PER_GW/5)
 
 resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
@@ -1371,19 +1374,20 @@ resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
          subsector...5 = ifelse(is.na(subsector...5), subsector, subsector...5))%>%
   left_join(scenario_mapping, by = join_by(scenario)) %>% 
   left_join(resource_mapping, by = c("subsector...5"="technology")) %>% 
-  group_by(scenario.comp,year,region,resource_type) %>% 
-  summarize(fuel_consumption=sum(fuel_consumption))
+  group_by(scenario.comp, year, region, resource_type) %>% 
+  summarize(fuel_consumption=sum(fuel_consumption), .groups = "drop")
   
   resource_tab<-left_join(resource_comp_gen_cap, resource_comp_new_cap, by = join_by(scenario.comp, year, region, resource_type)) %>% 
     left_join(resource_comp_retirements, by = join_by(scenario.comp, year, region, resource_type)) %>% 
     left_join(resource_fuel_input, by = join_by(scenario.comp, year, region, resource_type)) %>% 
     mutate(model="GCAM",
-         resource_id=resource_type) %>%
-    select(model,scenario.comp,year,region,resource_id, resource_type, installed_capacity_total, installed_capacity_new, retired_capacity, generation, fuel_consumption) %>% 
+           resource_id = resource_type) %>%
+    select(model,scenario.comp,year,region,resource_id, resource_type, installed_capacity_total, installed_capacity_new,
+           retired_capacity, generation, fuel_consumption) %>% 
   rename(zone_name=region,
          scenario=scenario.comp)
 
-write_stamp_csv(resource_tab,"comp_template_resource_tab")
+write_stamp_csv(resource_tab, "comp_template_resource_tab")
 
 gas_tab<- fuelprices %>%
   left_join(scenario_mapping, by = join_by(scenario)) %>% 
