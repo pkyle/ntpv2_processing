@@ -17,7 +17,7 @@ gcam_database_directory <- "/Users/d3p747/Desktop/stash/decarb/output"
 
 REQUERY_DATA <- FALSE # TRUE if you need to requery gcam results, FALSE if not
 
-GCAM_COMMIT_HASH <- "665540" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
+GCAM_COMMIT_HASH <- "06711a" # Output filenames will be stamped with the commit hashes of both the model and the post-process reporting script..
                               # The model commit hash needs to be specified manually here
 
 # Pick AEO version to compare
@@ -106,9 +106,8 @@ WECC_states <- c("WA", "ID", "MT", "OR", "WY", "CA", "NV", "UT", "CO", "AZ", "NM
 # read rgcam proj file----
 gcam_output.proj <- loadProject("rgcam/gcam_output.proj")
 
-
 if(REQUERY_DATA){
-  scenarios <- c("Reference", "HighElecDemand", "LowElecDemand", "NG_Conservative",
+  scenarios <- c("Reference", "HighElecDemand", "LowElecDemand", "NG_Conservative", "NG_Optimistic",
                  "NG_Advanced", "VRE_Conservative", "VRE_Advanced", "Nuclear_Advanced")
 
   for(i in scenarios){
@@ -1558,23 +1557,34 @@ slide13a <- ggplot(slide13a_data, aes(x = year, y = diff_TWh, fill = technology)
 ggsave(filename = "figures/slide13a.png", height = 4, width = 4, units = "in")
 
 # 13b - diff from ref to adv, using same data as 12b
-# Don't include trade as it was upstream of regional cost adders used here
 fig13b_data_demand <- filter(gas_consumption_sector_state, scenario %in% c("Reference", "NG_Advanced")) %>%
   gather_years() %>%
   left_join(gas_cons_sector_map, by = "sector") %>%
   group_by(scenario, Sector, year) %>%
   summarise(value = sum(value)) %>%
-  ungroup() %>%
+  ungroup()
+
+fig13b_data_exports <- gas_trade_nation %>%
+  filter(scenario %in% c("Reference", "NG_Advanced"),
+         From.Country == "USA",
+         year %in% ANALYSIS_YEARS) %>%
+  mutate(Sector = paste(Commodity, "exports")) %>%
+  group_by(scenario, Sector, year) %>%
+  summarise(value = sum(Flow_Tbtu)) %>%
+  ungroup()
+
+fig13b_data <- bind_rows(fig13b_data_demand, fig13b_data_exports) %>%
   spread(key = scenario, value = value) %>%
   mutate(diff_Tbtu = NG_Advanced - Reference,
          Sector = factor(Sector, levels = rev(c("Electricity", "Industry", "Commercial",
                                                 "Residential", "Transportation",
                                                 "LNG exports", "Pipeline gas exports"))))
-slide13b <- ggplot(fig13b_data_demand, aes(x = year, y = diff_Tbtu, fill = Sector)) +
+
+slide13b <- ggplot(fig13b_data, aes(x = year, y = diff_Tbtu, fill = Sector)) +
   geom_bar(stat = "identity", position = "stack") +
-  ylab("Tbtu") +
+  ylab("diff_Tbtu") +
   xlab("") +
-  ggtitle("Change in Domestic Gas Consumption") +
+  ggtitle("Change in Natural Gas Disposition") +
   scale_fill_manual( values = gas_sector_colors, guide = guide_legend(title = NULL)) +
   theme_bw()
 ggsave(filename = "figures/slide13b.png", height = 4, width = 4, units = "in")

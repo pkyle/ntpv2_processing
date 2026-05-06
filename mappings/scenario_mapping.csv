@@ -4,7 +4,7 @@ HighElecDemand,High_Demand
 LowElecDemand,Low_Demand
 NG_Conservative,High_Cost_Gas
 NG_Advanced,Low_Cost_Gas
-,Optimistic_Gas
+NG_Optimistic,Optimistic_Gas
 VRE_Conservative,High_VRE_Cost
 VRE_Advanced,Low_VRE_Cost
 Nuclear_Advanced,Low_Nuclear_Cost
