@@ -1418,7 +1418,7 @@ slide11_gastoelec <- gather_years(gas_consumption_sector_state) %>%
   ungroup() %>%
   mutate(Variable = "Power Sector Gas Consumption (Tbtu)")
 slide11data <- bind_rows(slide11_totalelec, slide11_totalgas, slide11_gastoelec) %>%
-  mutate(scenario = factor(scenario, levels = c("Reference", "NG_Advanced", "NG_Conservative",
+  mutate(scenario = factor(scenario, levels = c("Reference", "NG_Advanced", "NG_Conservative", "NG_Optimistic",
                                                 "HighElecDemand", "LowElecDemand", "VRE_Advanced",
                                                 "VRE_Conservative", "Nuclear_Advanced")),
          Variable = factor(Variable, levels = c("Electricity Consumption (TWh)", "Total Gas Consumption (Tbtu)", "Power Sector Gas Consumption (Tbtu)")))
@@ -1426,6 +1426,7 @@ slide11data <- bind_rows(slide11_totalelec, slide11_totalgas, slide11_gastoelec)
 scenario_colors <- c(Reference = "black",
                      NG_Advanced = "blue",
                      NG_Conservative = "seagreen",
+                     NG_Optimistic = "red2",
                      HighElecDemand = "orange",
                      LowElecDemand = "purple",
                      VRE_Advanced = "skyblue",
