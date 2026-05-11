@@ -1385,6 +1385,28 @@ resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
            retired_capacity, generation, fuel_consumption) %>% 
   rename(zone_name=region,
          scenario=scenario.comp)
+  
+# 5/11/2026 GPK - add in GW of capacity, based on each state's TWh of VRE (wind + solar)
+  # The factor of 0.03 is consistent with AEO2026, but is somewhat higher than A-Leaf (0.015) or ReEDS (0.041)
+  # Assume 5-year lifetime of storage for simplicity
+  VRE_TWh_to_Storage_GW <- 0.06
+  storage_tab <- filter(resource_tab, resource_type %in% c("Solar", "Wind")) %>%
+    group_by(model, scenario, year, zone_name) %>%
+    summarise(VRE_generation = sum(generation), .groups = "drop") %>%
+    mutate(resource_id = "Storage",
+           resource_type = "Storage",
+           installed_capacity_total = VRE_generation * VRE_TWh_to_Storage_GW / MW_PER_GW,
+           installed_capacity_new = installed_capacity_total / 5,
+           generation = 0,
+           fuel_consumption = 0) %>%
+    group_by(model, scenario) %>%
+    mutate(retired_capacity = lag(installed_capacity_new, n = 1, order_by = year)) %>%
+    ungroup() %>%
+    replace_na(list(retired_capacity = 0)) %>%
+    select(names(resource_tab))
+    
+  resource_tab <- bind_rows(resource_tab, storage_tab) %>%
+    arrange(model, scenario, year, zone_name, resource_id)
 
 write_stamp_csv(resource_tab, "comp_template_resource_tab")
 
