@@ -1389,7 +1389,7 @@ resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
 # 5/11/2026 GPK - add in GW of capacity, based on each state's TWh of VRE (wind + solar)
   # The factor of 0.03 is consistent with AEO2026, but is somewhat higher than A-Leaf (0.015) or ReEDS (0.041)
   # Assume 5-year lifetime of storage for simplicity
-  VRE_TWh_to_Storage_GW <- 0.06
+  VRE_TWh_to_Storage_GW <- 0.041
   storage_tab <- filter(resource_tab, resource_type %in% c("Solar", "Wind")) %>%
     group_by(model, scenario, year, zone_name) %>%
     summarise(VRE_generation = sum(generation), .groups = "drop") %>%
