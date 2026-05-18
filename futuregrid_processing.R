@@ -1655,3 +1655,67 @@ slide14 <- ggplot(slide14_data, aes(x = year, y = diff_TWh, fill = technology)) 
   theme_bw()
 
 ggsave(filename = "figures/slide14.png", height = 4, width = 4, units = "in")
+
+# System cost calculation
+# "System costs = net present value (2% discount rate) of all capital and operating expenditures from 2025 to 2050 for
+# existing and new generation, storage, and transmission. Real 2024 dollars are used."
+# Capital costs older vintages are estimated post-hoc and deducted
+# First compile the levelized technology capital costs, in the model unit of 1975$/GJ
+capital_cost_2015 <- getQuery(gcam_output.proj, "elec gen non-energy costs") %>%
+  filter(input == "capital",
+         year %in% 2015:2025) %>%
+  select(scenario, region, subsector = subsector...6, technology, vintage = year, capcost_75USDGJ = value)
+
+# For hydropower, use the 2019 ATB, levelized with the 38% capacity factor above
+# The different values are from the different cost bins ("NPD")
+# This approach, using the minimum, assumes that the historical vintages are in the least-cost bin
+NREL_ATB_hydro_costs_USDperKW <- min(c(6231, 5672, 4173, 3935, 7306, 6522, 6388, 5751))
+default_FCR <- 0.1
+NREL_ATB_capcost_75USDGJ <- NREL_ATB_hydro_costs_USDperKW * default_FCR / gdp_deflator_1975_2021 / (HOURS_PER_YEAR * 0.38 * EJ_PER_TWH)
+
+capital_cost_2015_hydro <- distinct(capital_cost_2015, scenario, region, vintage) %>%
+  mutate(subsector = "hydro_base,depth=1",
+         technology = "hydro_base",
+         capcost_75USDGJ = NREL_ATB_capcost_75USDGJ)
+
+capital_cost_2015 <- bind_rows(capital_cost_2015, capital_cost_2015_hydro)
+
+# Compile the output from the 2015 vintage in the future years
+# Rename the technologies to correct for the cooling system based technology naming conventions
+# Join in the 2015 levelized capital costs, multiply through, and aggregate by scenario and year
+capital_cost_deduction <- getQuery(gcam_output.proj, "elec gen by tech and vintage") %>%
+  separate(technology, into = c("technology", "vintage"), sep = ",year=", convert = TRUE) %>%
+  filter(vintage %in% 2015:2025,
+         year %in% 2025:2050) %>%
+  select(scenario, region, subsector = subsector...6, technology, vintage, year, output_EJ = value) %>%
+  inner_join(capital_cost_2015, by = c("scenario", "region", "subsector", "technology", "vintage")) %>%
+  mutate(deduction_bil21USD = output_EJ * capcost_75USDGJ * gdp_deflator_1975_2021) %>%
+  group_by(scenario, year) %>%
+  summarise(deduction_bil21USD = sum(deduction_bil21USD)) %>%
+  ungroup()
+
+# This method uses the price x quantity of electricity generation minus the "existing" capital costs
+electricity_system_cost <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
+  filter(grepl("generation|elect_td_bld", sector),
+         year %in% 2025:2050) %>%
+  left_join(getQuery(gcam_output.proj, "prices by sector"),
+            by = c("scenario", "region", "sector", "year"),
+            suffix = c(".quantity", ".price")) %>%
+  mutate(cost_bil21USD = value.quantity * value.price * gdp_deflator_1975_2021) %>%
+  group_by(scenario, year) %>%
+  summarise(cost_bil21USD = sum(cost_bil21USD)) %>%
+  ungroup() %>%
+  left_join(capital_cost_deduction, by = c("scenario", "year")) %>%
+  mutate(cost_bil21USD = cost_bil21USD - deduction_bil21USD) %>%
+  select(-deduction_bil21USD) %>%
+  complete(nesting(scenario), year = 2025:2050) %>%
+  group_by(scenario) %>%
+  mutate(cost_bil21USD = approx_fun(year, cost_bil21USD)) %>%
+  ungroup() %>%
+  mutate(discount_factor = 1 / 1.02 ^ (year - 2025),
+         discounted_cost_bil21USD = cost_bil21USD * discount_factor) %>%
+  group_by(scenario) %>%
+  summarise(discounted_cost_bil21USD = sum(discounted_cost_bil21USD)) %>%
+  ungroup()
+
+write_stamp_csv(electricity_system_cost, "electricity_system_cost")
