@@ -89,7 +89,7 @@ MW_PER_GW <- 1000
 MW_PER_TW <- 1000000
 MMBTU_PER_EJ <- 947817120
 HOURS_PER_YEAR <- 8766
-gdp_deflator_1975_2021 <- 3.964  # conversion from 1975$ in GCAM output to 2021$ for reporting 
+gdp_deflator_1975_2021 <- 3.964  # conversion from 1975$ in GCAM output to 2021$ for reporting
 gdp_deflator_2021_2025<-1.17055 # conversion from 2021$ in reporting to 2025$ for comparison template
 EJ_Tcf <- .981
 EJ_Mmcf <- 981000                       # conversion from million cubic feet of natural gas to EJ (LHV)
@@ -236,7 +236,7 @@ for(i in unique(ref_elec_cons_sector_comparison$EER_sector)){
     scale_color_manual(values = c("black", "red")) +
     theme(legend.position = "none") +
     ggtitle(i)
-  
+
   ggsave(paste0("figures/EER_GCAM_ref_", i, "_comparison.png"), width = 5, height = 5, units = "in")
 }
 
@@ -409,7 +409,7 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     group_by( scenario, region, technology, year ) %>%
     summarize( generation_TWh = sum( value ) ) %>%
     ungroup()
-  
+
   AEO_renewable_generation_nonWECC <- AEO_renewable_generation %>%
     filter( region == "USA" ) %>%
     rename( generation_TWh_USA = generation_TWh ) %>%
@@ -421,13 +421,13 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     mutate( generation_TWh = generation_TWh_USA - generation_TWh_WECC,
             region = "Non_WECC" ) %>%
     select( colnames( AEO_renewable_generation ) )
-  
+
   AEO_renewable_generation <- bind_rows( AEO_renewable_generation, AEO_renewable_generation_nonWECC )
-  
+
   AEO_elec_generation <- filter(AEO_elec_generation, technology != "Renewable") %>%
     bind_rows(AEO_renewable_generation) %>%
     arrange(scenario, region, technology, year)
-  
+
   # Make data table to expand state-level data to WECC and non-WECC
   WECC_and_nonWECC_fractions <- data.frame(region = REPORTING_STATES) %>%
     left_join(WECC_fractions, by = "region") %>%
@@ -435,8 +435,8 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     rename(WECC = WECC_fraction) %>%
     mutate(Non_WECC = 1 - WECC) %>%
     gather(key = "region_group", value = "fraction", -region)
-    
-  
+
+
   # Process GCAM data - re-aggregate from model queries in order to differentiate solar and wind categories
   elec_gen_fuel_AEO_comp_WECC <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
     bind_rows(getQuery(gcam_output.proj, "outputs by tech")) %>%
@@ -458,13 +458,13 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     group_by(scenario, region, technology, year) %>%
     summarise(generation_TWh = round(sum(value) * TWH_PER_EJ, digits = REPORTING_DIGITS_TWH)) %>%
     ungroup()
-  
+
   elec_gen_fuel_AEO_comp_USA <- elec_gen_fuel_AEO_comp_WECC %>%
     mutate(region = "USA") %>%
     group_by(scenario, region, technology, year) %>%
     summarise(generation_TWh = sum(generation_TWh)) %>%
     ungroup()
-  
+
   # Non-WECC = USA minus WECC
   elec_gen_fuel_AEO_comp_nonWECC <- elec_gen_fuel_AEO_comp_USA %>%
     filter(region == "USA") %>%
@@ -483,14 +483,14 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     ) %>%
     select(colnames(elec_gen_fuel_AEO_comp_USA))
 
-    
+
   # Combine all regions into one df:
   elec_gen_fuel_AEO_comp <- bind_rows(
     elec_gen_fuel_AEO_comp_USA,
     elec_gen_fuel_AEO_comp_WECC %>% filter(region == "WECC"),
     elec_gen_fuel_AEO_comp_nonWECC
   )
-  
+
   # Graph and save data
   elec_gen_AEO_fuel_region_comparison_data <- bind_rows( elec_gen_fuel_AEO_comp,
                                                          AEO_elec_generation )
@@ -499,7 +499,7 @@ ggsave( "figures/WECC_elec_gen_by_tech_comparison.png",
     elec_gen_AEO_fuel_region_comparison_data,
     paste0("elec_gen_tech_AEO_", AEO_VERSION, "_comparison")
   )
-  
+
   aeo_elec_comp_fun <- function( data, region_of_interest ){
 
       data_region <- data %>% filter( region == region_of_interest)
@@ -736,7 +736,7 @@ AEO_elec_capacity <- bind_rows(
     .groups = "drop"
   )
 
-# Calculate AEO non-WECC capacities 
+# Calculate AEO non-WECC capacities
 AEO_elec_capacity_nonWECC <- AEO_elec_capacity %>%
   filter(region == "USA") %>%
   rename(capacity_GW_USA = capacity_GW) %>%
@@ -864,7 +864,7 @@ elec_cap_GCAM_WECC_nonWECC <- elec_allvars_state_tech_vintage %>%
     .groups = "drop"
   )
 
-# aggregate WECC and non-WECC to USA level and attach 
+# aggregate WECC and non-WECC to USA level and attach
 elec_cap_GCAM_USA <- elec_cap_GCAM_WECC_nonWECC %>%
   mutate(region = "USA") %>%
   group_by(scenario, region, technology, year) %>%
@@ -883,13 +883,13 @@ write_stamp_csv(
   elec_cap_AEO_GCAM_comp,
   paste0("elec_cap_tech_AEO_", AEO_VERSION, "_GCAM_comparison")
 )
-  
+
 
 aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
-  
+
   data_region <- data %>%
     filter(region == region_of_interest)
-  
+
   plot <- ggplot(
     data_region,
     aes(
@@ -936,7 +936,7 @@ aeo_elec_cap_comp_fun <- function(data, region_of_interest) {
       )
     ) +
     theme(legend.title = element_blank())
-  
+
   ggsave(
     paste0("figures/AEO_", AEO_VERSION, "_elec_cap_by_tech_comparison-", region_of_interest, ".png"),
     plot = plot,
@@ -1332,33 +1332,33 @@ ggsave( "figures/gas_pipeline_imports_by_state.png",
 #resource tab
 
 resource_comp<-elec_allvars_state_tech_vintage %>%
-  left_join_error_no_match(scenario_mapping, by = join_by(scenario)) %>% 
+  left_join_error_no_match(scenario_mapping, by = join_by(scenario)) %>%
   left_join_error_no_match(resource_mapping, by = join_by(technology))
 
 resource_comp_gen_cap<- resource_comp %>%
-  group_by(scenario.comp, year, region, resource_type) %>% 
+  group_by(scenario.comp, year, region, resource_type) %>%
   summarize(generation = sum(gen_TWh),
-            installed_capacity_total = sum(capacity_GW), .groups = "drop") %>% 
+            installed_capacity_total = sum(capacity_GW), .groups = "drop") %>%
   mutate(generation = generation * MW_PER_TW,
          installed_capacity_total = installed_capacity_total * MW_PER_GW)
 
-resource_comp_new_cap<-resource_comp %>% 
-  filter(vintage==year) %>% 
-  group_by(scenario.comp, year, region, resource_type) %>% 
-  summarize(installed_capacity_new=sum(capacity_GW), .groups = "drop") %>% 
-  mutate(installed_capacity_new= installed_capacity_new*MW_PER_GW/5) 
+resource_comp_new_cap<-resource_comp %>%
+  filter(vintage==year) %>%
+  group_by(scenario.comp, year, region, resource_type) %>%
+  summarize(installed_capacity_new=sum(capacity_GW), .groups = "drop") %>%
+  mutate(installed_capacity_new= installed_capacity_new*MW_PER_GW/5)
 
 resource_comp_retirements<-resource_comp %>%
-  group_by(scenario.comp, year, vintage, region, technology) %>% 
+  group_by(scenario.comp, year, vintage, region, technology) %>%
   summarize(capacity_GW=sum(capacity_GW), .groups = "drop") %>%
   arrange(scenario.comp, region, technology, vintage, year) %>%
   group_by(scenario.comp, region, technology, vintage) %>%
   mutate(capacity_prev = lag(capacity_GW, n = 1, order_by = year),# Previous period capacity within same vintage/region/resource group
-         retired_capacity = pmax(0, capacity_prev - capacity_GW, na.rm = FALSE))  %>% 
+         retired_capacity = pmax(0, capacity_prev - capacity_GW, na.rm = FALSE))  %>%
   ungroup() %>%
-  left_join(resource_mapping, by = join_by(technology)) %>% 
-  group_by(scenario.comp, year, region, resource_type) %>% 
-  summarize(retired_capacity=sum(retired_capacity, na.rm = TRUE), .groups = "drop") %>% 
+  left_join(resource_mapping, by = join_by(technology)) %>%
+  group_by(scenario.comp, year, region, resource_type) %>%
+  summarize(retired_capacity=sum(retired_capacity, na.rm = TRUE), .groups = "drop") %>%
   mutate(retired_capacity= retired_capacity*MW_PER_GW/5)
 
 resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
@@ -1368,24 +1368,24 @@ resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
          !grepl("oil-credits",input),
          technology != "hydrogen cogen",
          year %in% ANALYSIS_YEARS,
-         region %in% REPORTING_STATES) %>% 
+         region %in% REPORTING_STATES) %>%
   mutate(fuel_consumption=value*MMBTU_PER_EJ,
          subsector...5 = ifelse(is.na(subsector...5), subsector, subsector...5))%>%
-  left_join(scenario_mapping, by = join_by(scenario)) %>% 
-  left_join(resource_mapping, by = c("subsector...5"="technology")) %>% 
-  group_by(scenario.comp, year, region, resource_type) %>% 
+  left_join(scenario_mapping, by = join_by(scenario)) %>%
+  left_join(resource_mapping, by = c("subsector...5"="technology")) %>%
+  group_by(scenario.comp, year, region, resource_type) %>%
   summarize(fuel_consumption=sum(fuel_consumption), .groups = "drop")
-  
-  resource_tab<-left_join(resource_comp_gen_cap, resource_comp_new_cap, by = join_by(scenario.comp, year, region, resource_type)) %>% 
-    left_join(resource_comp_retirements, by = join_by(scenario.comp, year, region, resource_type)) %>% 
-    left_join(resource_fuel_input, by = join_by(scenario.comp, year, region, resource_type)) %>% 
+
+  resource_tab<-left_join(resource_comp_gen_cap, resource_comp_new_cap, by = join_by(scenario.comp, year, region, resource_type)) %>%
+    left_join(resource_comp_retirements, by = join_by(scenario.comp, year, region, resource_type)) %>%
+    left_join(resource_fuel_input, by = join_by(scenario.comp, year, region, resource_type)) %>%
     mutate(model="GCAM",
            resource_id = resource_type) %>%
     select(model,scenario.comp,year,region,resource_id, resource_type, installed_capacity_total, installed_capacity_new,
-           retired_capacity, generation, fuel_consumption) %>% 
+           retired_capacity, generation, fuel_consumption) %>%
   rename(zone_name=region,
          scenario=scenario.comp)
-  
+
 # 5/11/2026 GPK - add in GW of capacity, based on each state's TWh of VRE (wind + solar)
   # The factor of 0.03 is consistent with AEO2026, but is somewhat higher than A-Leaf (0.015) or ReEDS (0.041)
   # Assume 5-year lifetime of storage for simplicity
@@ -1404,23 +1404,35 @@ resource_fuel_input <- getQuery(gcam_output.proj, "inputs by nested tech") %>%
     ungroup() %>%
     replace_na(list(retired_capacity = 0)) %>%
     select(names(resource_tab))
-    
+
   resource_tab <- bind_rows(resource_tab, storage_tab) %>%
     arrange(model, scenario, year, zone_name, resource_id)
 
-write_stamp_csv(resource_tab, "comp_template_resource_tab")
+write_csv(resource_tab, "outputs/gcam_generation.csv")
 
-gas_tab<- fuelprices %>%
-  left_join(scenario_mapping, by = join_by(scenario)) %>% 
-  filter(energy_input=="wholesale gas") %>% 
+gas_prices_tab <- fuelprices %>%
+  left_join(scenario_mapping, by = join_by(scenario)) %>%
+  filter(energy_input=="wholesale gas") %>%
   mutate(model="GCAM",
-         fuelprice_USDperMMbtu*gdp_deflator_2021_2025) %>% 
-  select(model,scenario.comp,year,region,fuelprice_USDperMMbtu) %>% 
+         fuelprice_USDperMMbtu*gdp_deflator_2021_2025) %>%
+  select(model,scenario.comp,year,region,fuelprice_USDperMMbtu) %>%
   rename(zone_name=region,
          scenario=scenario.comp,
          gas_price=fuelprice_USDperMMbtu)
 
-write_stamp_csv(gas_tab,"comp_template_gas_tab")
+gas_cons_tab <- gas_consumption_sector_state %>%
+  left_join(scenario_mapping, by = join_by(scenario)) %>%
+  gather_years() %>%
+  group_by(scenario.comp, region, year) %>%
+  summarise(gas_consumption = sum(value) * 1e6) %>%
+  ungroup() %>%
+  mutate(model = "GCAM") %>%
+  select(model, scenario = scenario.comp, year, zone_name = region, gas_consumption)
+
+gas_tab <- gas_prices_tab %>%
+  left_join_error_no_match(gas_cons_tab, by = c("model", "scenario", "year", "zone_name"))
+
+write_csv(gas_tab,"outputs/gcam_gas.csv")
 
 ## Figures for powerpoint presentation
 # Slide 11: All scenarios consumption of total electricity, total gas and gas to the power sector
@@ -1462,7 +1474,7 @@ ggplot(slide11data, aes(x = year, y = value, color = scenario)) +
   xlab("") +
   scale_color_manual(values = scenario_colors, guide = guide_legend(title = NULL)) +
   theme_bw()
-  
+
 ggsave(filename = "figures/slide11.png", height = 5, width = 10, units = "in")
 
 # Slide12: refererence scenario outputs
