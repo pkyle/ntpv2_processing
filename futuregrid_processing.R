@@ -1707,7 +1707,7 @@ capital_cost_deduction <- getQuery(gcam_output.proj, "elec gen by tech and vinta
   ungroup()
 
 # This method uses the price x quantity of electricity generation minus the "existing" capital costs
-electricity_system_cost <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
+electricity_system_cost_year <- getQuery(gcam_output.proj, "outputs by nested tech") %>%
   filter(grepl("generation|elect_td_bld", sector),
          year %in% 2025:2050) %>%
   left_join(getQuery(gcam_output.proj, "prices by sector"),
@@ -1723,7 +1723,11 @@ electricity_system_cost <- getQuery(gcam_output.proj, "outputs by nested tech") 
   complete(nesting(scenario), year = 2025:2050) %>%
   group_by(scenario) %>%
   mutate(cost_bil21USD = approx_fun(year, cost_bil21USD)) %>%
-  ungroup() %>%
+  ungroup()
+
+write_stamp_csv(electricity_system_cost_year, "electricity_system_cost_year")
+
+electricity_system_cost <- electricity_system_cost_year %>%
   mutate(discount_factor = 1 / 1.02 ^ (year - 2025),
          discounted_cost_bil21USD = cost_bil21USD * discount_factor) %>%
   group_by(scenario) %>%
