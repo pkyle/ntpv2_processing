@@ -14,6 +14,7 @@ library(RColorBrewer)
 library(devtools)
 library(gcamdata)
 library(stringr)
+library(readxl)
 
 # read mapping files ----
 fuel_LHV_HHV <- read_csv("./data/fuel_LHV_HHV.csv")
@@ -21,6 +22,7 @@ elec_tech_mapping <- read_csv("./mappings/elec_tech_mapping.csv")
 price_mapping <- read_csv("./mappings/price_mapping.csv")
 state_mapping <- read_csv("./mappings/state_mapping.csv")
 resource_mapping<-read.csv("./mappings/resource_mapping.csv")
+EIAform860_techs <- read.csv("./mappings/EIAform860_techs.csv", na.strings = "")
 
 # define constants ----
 ANALYSIS_YEARS <- 2025:2050
@@ -290,7 +292,7 @@ write_csv(gas_tab,"outputs_permutations/gcam_gas.csv")
 # First compile the levelized technology capital costs, in the model unit of 1975$/GJ
 capital_cost_2015 <- getQuery(query_out_all.proj, "elec gen non-energy costs") %>%
   filter(input == "capital",
-         year %in% 2015:2025) %>%
+         year %in% 2015:2021) %>%
   select(scenario, region, subsector = subsector...6, technology, vintage = year, capcost_75USDGJ = value)
 
 # For hydropower, use the 2019 ATB, levelized with the 38% capacity factor above
@@ -307,16 +309,39 @@ capital_cost_2015_hydro <- distinct(capital_cost_2015, scenario, region, vintage
 
 capital_cost_2015 <- bind_rows(capital_cost_2015, capital_cost_2015_hydro)
 
+# Deducting all levelized capital costs of power plants operating in 2021 would overestimate what should be deducted,
+# as a portion of these power plants were built in recent years and still have capital payments.
+# This next portion uses data from the 2024 EIA form 860 to estimate the portion of the stock of each power plant type
+# that should be deducted
+# The cutoff year is the first operational year after which we assume capital payments are still being made in 2025
+CUTOFF_YEAR <- 2000
+OldCapacityFractions <- readxl::read_xlsx(path = "data/EIA_form860_2024/3_1_Generator_Y2024.xlsx", sheet = "Operable", skip = 1) %>%
+  select(EIA_technology = Technology, Capacity = `Nameplate Capacity (MW)`, StartYear = `Operating Year`) %>%
+  left_join(EIAform860_techs, by = "EIA_technology") %>%
+  drop_na(resource_type) %>%
+  mutate(before_cutoff = if_else(StartYear < CUTOFF_YEAR, 1, 0),
+         OldCapacity = Capacity * before_cutoff) %>%
+  group_by(resource_type) %>%
+  summarise(Capacity = sum(Capacity),
+            OldCapacity = sum(OldCapacity)) %>%
+  ungroup() %>%
+  mutate(OldCapacityFraction = OldCapacity / Capacity) %>%
+  select(resource_type, OldCapacityFraction)
+
 # Compile the output from the 2015 vintage in the future years
 # Rename the technologies to correct for the cooling system based technology naming conventions
 # Join in the 2015 levelized capital costs, multiply through, and aggregate by scenario and year
 capital_cost_deduction <- getQuery(query_out_all.proj, "elec gen by tech and vintage") %>%
   separate(technology, into = c("technology", "vintage"), sep = ",year=", convert = TRUE) %>%
-  filter(vintage %in% 2015:2025,
+  filter(vintage %in% 2015:2021,
          year %in% 2025:2050) %>%
   select(scenario, region, subsector = subsector...6, technology, vintage, year, output_EJ = value) %>%
   inner_join(capital_cost_2015, by = c("scenario", "region", "subsector", "technology", "vintage")) %>%
-  mutate(deduction_bil21USD = output_EJ * capcost_75USDGJ * gdp_deflator_1975_2021) %>%
+  left_join(elec_tech_mapping, by = "technology") %>%
+  left_join(resource_mapping, by = c(reporting_technology = "technology")) %>%
+  left_join(OldCapacityFractions, by = "resource_type") %>%
+  replace_na(list(OldCapacityFraction = 0)) %>%
+  mutate(deduction_bil21USD = output_EJ * capcost_75USDGJ * gdp_deflator_1975_2021 * (1 - OldCapacityFraction)) %>%
   group_by(scenario, year) %>%
   summarise(deduction_bil21USD = sum(deduction_bil21USD)) %>%
   ungroup()

@@ -1,0 +1,28 @@
+EIA_technology,resource_type
+All Other,
+Batteries,
+Coal Integrated Gasification Combined Cycle,Coal
+Conventional Hydroelectric,Hydro
+Conventional Steam Coal,Coal
+Flywheels,
+Geothermal,
+Hydroelectric Pumped Storage,
+Landfill Gas,
+Municipal Solid Waste,
+Natural Gas Fired Combined Cycle,NG
+Natural Gas Fired Combustion Turbine,NG
+Natural Gas Internal Combustion Engine,NG
+Natural Gas Steam Turbine,NG
+Natural Gas with Compressed Air Storage,NG
+Nuclear,Nuclear
+Offshore Wind Turbine,
+Onshore Wind Turbine,
+Other Gases,
+Other Natural Gas,
+Other Waste Biomass,
+Petroleum Coke,Petroleum
+Petroleum Liquids,Petroleum
+Solar Photovoltaic,
+Solar Thermal with Energy Storage,
+Solar Thermal without Energy Storage,
+Wood/Wood Waste Biomass,
