@@ -9,6 +9,7 @@ rgcam/*.proj
 #Script outputs
 figures/*.png
 outputs/*.csv
+outputs_permutations/*.csv
 
 # Optional: OS / IDE files
 *.DS_Store
