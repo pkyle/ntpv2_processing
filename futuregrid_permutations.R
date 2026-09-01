@@ -314,7 +314,7 @@ capital_cost_2015 <- bind_rows(capital_cost_2015, capital_cost_2015_hydro)
 # This next portion uses data from the 2024 EIA form 860 to estimate the portion of the stock of each power plant type
 # that should be deducted
 # The cutoff year is the first operational year after which we assume capital payments are still being made in 2025
-CUTOFF_YEAR <- 2000
+CUTOFF_YEAR <- 1995
 OldCapacityFractions <- readxl::read_xlsx(path = "data/EIA_form860_2024/3_1_Generator_Y2024.xlsx", sheet = "Operable", skip = 1) %>%
   select(EIA_technology = Technology, Capacity = `Nameplate Capacity (MW)`, StartYear = `Operating Year`) %>%
   left_join(EIAform860_techs, by = "EIA_technology") %>%
