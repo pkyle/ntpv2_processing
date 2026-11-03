@@ -1760,3 +1760,68 @@ electricity_system_cost <- electricity_system_cost_year %>%
   ungroup()
 
 write_stamp_csv(electricity_system_cost, "electricity_system_cost")
+
+# Divide elec system cost by generation
+elec_gen_fuel_nation %>%
+  group_by(scenario, year) %>%
+  summarise(generation_TWh = sum(generation_TWh)) %>%
+  ungroup() %>%
+  left_join(electricity_system_cost_year, by = c("scenario", "year")) %>%
+  mutate(cost_21USDperMWh = cost_bil21USD * 1000 / generation_TWh) ->
+  electricity_system_cost_year_per_mwh
+
+write_stamp_csv(electricity_system_cost_year_per_mwh, "electricity_system_cost_year_per_mwh")
+
+# Add in a couple of figures on gas production and consumption by state and sector
+gasprod_figdata <- filter(gas_production_state,
+                          year %in% c(2025, 2050),
+                          scenario %in% c("Reference", "NG_Conservative", "NG_Optimistic"),
+                          production_Tbtu > 5) %>%
+  mutate(category = paste(year, scenario)) %>%
+  filter(category %in% c("2025 Reference", "2050 Reference", "2050 NG_Conservative", "2050 NG_Optimistic"))
+ggplot(gasprod_figdata,aes(y = region, x = production_Tbtu, fill = category)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme_bw() +
+  xlab("Tbtu") +
+  ylab("")+
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = c("2025 Reference" = "black",
+                               "2050 Reference" = "gray70",
+                               "2050 NG_Conservative" = "seagreen3",
+                               "2050 NG_Optimistic" = "skyblue")) +
+  theme(legend.position = "inside",
+        legend.position.inside = c(0.8, 0.2))
+
+  
+ggsave(filename = "figures/multilab_slide7.png", height = 8, width = 5, units = "in")
+
+gascons_figdata <- gas_consumption_sector_state %>%
+  gather_years() %>%
+  filter(year %in% c(2025, 2050),
+         scenario %in% c("Reference", "NG_Conservative", "NG_Optimistic", "LowElecDemand", "HighElecDemand")) %>%
+  mutate(category = paste(year, scenario)) %>%
+  filter(category %in% c("2025 Reference", "2050 Reference", "2050 NG_Conservative", "2050 NG_Optimistic",
+                         "2050 LowElecDemand", "2050 HighElecDemand")) %>%
+  mutate(category = factor(category, levels = c("2050 NG_Optimistic", "2050 NG_Conservative", "2050 Reference",
+                                                "2050 LowElecDemand", "2050 HighElecDemand", "2025 Reference"))) %>%
+  left_join(gas_cons_sector_map, by = "sector") %>%
+  group_by(category, Sector) %>%
+  summarise(value = sum(value), .groups = "drop") 
+
+ggplot(gascons_figdata,aes(y = category, x = value, fill = Sector)) +
+  geom_bar(position = "stack", stat = "identity") +
+  theme_bw() +
+  xlab("Tbtu") +
+  ylab("")+
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = c("Commercial" = "seagreen3",
+                               "Residential" = "brown",
+                               "Industry" = "gray70",
+                               "Electricity" = "yellow",
+                               "Transportation" = "navyblue")) +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+ggsave(filename = "figures/multilab_slide9.png", height = 5, width = 5, units = "in")
+
+
